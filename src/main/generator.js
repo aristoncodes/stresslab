@@ -127,6 +127,7 @@ class LineParser {
   bracket() {
     this.expect('[')
     const e = this.expr()
+    if (this.peek('..')) this.fail('sizes in [ ] must be one value; for a random size declare it first, e.g. "n: int 1..8" then use [n]')
     this.expect(']')
     return e
   }
@@ -287,12 +288,35 @@ export function sizeScale(test, tests) {
   return Math.min(1, (test - 1) / ramp)
 }
 
+// `env` maps int variable names to values. Throws SpecError for unknown values.
+function evalExpr(e, env, line) {
+  if (e.num !== undefined) return e.num
+  if (e.ref) {
+    if (env[e.ref] === undefined) throw new SpecError(line, `"${e.ref}" has no value yet`)
+    return env[e.ref]
+  }
+  const a = evalExpr(e.a, env, line)
+  if (e.op === 'neg') return -a
+  const b = evalExpr(e.b, env, line)
+  switch (e.op) {
+    case '+': return a + b
+    case '-': return a - b
+    case '*': return a * b
+    case '/':
+      if (b === 0) throw new SpecError(line, 'division by zero')
+      return Math.trunc(a / b)
+    case '^': return a ** b
+  }
+}
+
 class Gen {
   constructor(seed, scale) {
     this.rnd = mulberry32(seed)
     this.scale = scale
     this.out = []
     this.size = 0
+    this.lines = 0 // output lines so far
+    this.cases = [] // line ranges of each top-level repeat iteration (multi-test inputs)
   }
   int(lo, hi) {
     return lo + Math.floor(this.rnd() * (hi - lo + 1))
@@ -305,20 +329,7 @@ class Gen {
     return a
   }
   eval(e, env, line) {
-    if (e.num !== undefined) return e.num
-    if (e.ref) return env[e.ref]
-    const a = this.eval(e.a, env, line)
-    if (e.op === 'neg') return -a
-    const b = this.eval(e.b, env, line)
-    switch (e.op) {
-      case '+': return a + b
-      case '-': return a - b
-      case '*': return a * b
-      case '/':
-        if (b === 0) throw new SpecError(line, 'division by zero')
-        return Math.trunc(a / b)
-      case '^': return a ** b
-    }
+    return evalExpr(e, env, line)
   }
   range(r, env, line) {
     const lo = this.eval(r.lo, env, line)
@@ -416,7 +427,7 @@ class Gen {
     }
   }
 
-  run(stmts, env) {
+  run(stmts, env, depth = 0) {
     for (const s of stmts) {
       if (s.kind === 'print') {
         const parts = s.items.map((it) => {
@@ -431,9 +442,14 @@ class Gen {
         this.size += text.length
         if (this.size > MAX_OUTPUT) throw new SpecError(s.line, 'generated input is larger than 1 MB')
         this.out.push(text)
+        this.lines += text.split('\n').length - 1
       } else if (s.kind === 'repeat') {
         const t = this.count(s.count, env, s.line, 'repeat count')
-        for (let k = 0; k < t; k++) this.run(s.body, Object.create(env))
+        for (let k = 0; k < t; k++) {
+          const start = this.lines + 1
+          this.run(s.body, Object.create(env), depth + 1)
+          if (depth === 0) this.cases.push({ start, end: this.lines })
+        }
       } else {
         env[s.name] = this.value(s, env)
       }
@@ -441,9 +457,162 @@ class Gen {
   }
 }
 
-// Generate one test input string. `test` is 1-based; `tests` the planned total.
-export function generateInput(ast, { seed, test = 1, tests = 1 }) {
+// Generate one test. `test` is 1-based; `tests` the planned total.
+// Returns { input, cases }: cases are the 1-based input line ranges of each
+// top-level `repeat` iteration, used to point at the failing test case.
+export function generateTest(ast, { seed, test = 1, tests = 1 }) {
   const g = new Gen(seed, sizeScale(test, tests))
   g.run(ast, {})
-  return g.out.join('')
+  return { input: g.out.join(''), cases: g.cases }
+}
+
+export const generateInput = (ast, opts) => generateTest(ast, opts).input
+
+
+// ---------- Sample matcher ----------
+// Checks that a sample input from the problem statement has the structure the
+// spec describes (counts, lengths, character sets, sortedness…), reading values
+// in `print` order. Value ranges are NOT checked: specs shrink them on purpose.
+
+class MatchError extends Error {}
+
+function sampleTokens(text) {
+  return text.split('\n').flatMap((line, i) =>
+    line.trim().split(/\s+/).filter(Boolean).map((t) => ({ t, line: i + 1 }))
+  )
+}
+
+class Matcher {
+  constructor(text) {
+    this.toks = sampleTokens(text)
+    this.pos = 0
+  }
+  fail(msg) {
+    throw new MatchError(msg)
+  }
+  take(what) {
+    if (this.pos >= this.toks.length) this.fail(`the sample ended, but the spec expects ${what}`)
+    return this.toks[this.pos++]
+  }
+  int(what) {
+    const tok = this.take(what)
+    if (!/^[+-]?\d+$/.test(tok.t)) this.fail(`sample line ${tok.line}: expected an integer for ${what}, found "${tok.t}"`)
+    return Number(tok.t)
+  }
+  ints(count, what) {
+    return Array.from({ length: count }, (_, i) => this.int(`${what} (item ${i + 1} of ${count})`))
+  }
+  word(what, len, chars) {
+    const tok = this.take(what)
+    if (len !== undefined && tok.t.length !== len) {
+      this.fail(`sample line ${tok.line}: ${what} should have length ${len}, found "${tok.t}" (length ${tok.t.length})`)
+    }
+    const bad = [...tok.t].find((c) => !chars.includes(c))
+    if (bad) this.fail(`sample line ${tok.line}: ${what} uses "${bad}", which is not in the spec's character set "${chars.join('')}"`)
+  }
+  size(e, env, line, what) {
+    try {
+      return evalExpr(e, env, line)
+    } catch {
+      this.fail(`spec line ${line}: the size of ${what} depends on a variable that isn't printed before it`)
+    }
+  }
+
+  // A size that is a plain variable never printed before (e.g. |s| in "the only
+  // line contains s"). Returns its name so the caller can infer it from the sample.
+  unprinted(e, env) {
+    return e.ref && env[e.ref] === undefined ? e.ref : null
+  }
+  // Tokens left on the line of the next token (for arrays whose length isn't printed).
+  restOfLine() {
+    const line = this.toks[this.pos]?.line
+    let k = this.pos
+    while (k < this.toks.length && this.toks[k].line === line) k++
+    return k - this.pos
+  }
+
+  // Read one printed variable according to its declaration.
+  readVar(d, env) {
+    const { line, name } = d
+    const n = (e, what) => this.size(e, env, line, what)
+    const lenVar = d.len && this.unprinted(d.len, env)
+    if (lenVar && d.kind === 'string') {
+      const tok = this.toks[this.pos]
+      env[lenVar] = tok ? tok.t.length : 0
+    } else if (lenVar && ['array', 'sorted', 'distinct', 'perm'].includes(d.kind)) {
+      env[lenVar] = this.restOfLine()
+    }
+    switch (d.kind) {
+      case 'array':
+      case 'sorted':
+      case 'distinct':
+      case 'perm': {
+        const len = n(d.len, name)
+        const a = this.ints(len, name)
+        if (d.kind === 'sorted' && a.some((x, i) => i && a[i - 1] > x)) this.fail(`${name} is declared sorted, but the sample's values are not sorted`)
+        if (d.kind === 'distinct' && new Set(a).size !== a.length) this.fail(`${name} is declared distinct, but the sample has repeated values`)
+        if (d.kind === 'perm' && [...a].sort((x, y) => x - y).some((x, i) => x !== i + 1)) this.fail(`${name} is declared perm[${len}], but the sample's values are not a permutation of 1..${len}`)
+        return
+      }
+      case 'string':
+        return this.word(name, n(d.len, name), d.chars)
+      case 'grid': {
+        const rows = n(d.rows, name)
+        const cols = n(d.cols, name)
+        for (let r = 0; r < rows; r++) this.word(`row ${r + 1} of ${name}`, cols, d.chars)
+        return
+      }
+      case 'tree':
+      case 'graph': {
+        const nodes = n(d.n, name)
+        const edges = d.kind === 'tree' ? nodes - 1 : n(d.m, name)
+        const per = d.weight ? 3 : 2
+        for (let k = 0; k < edges; k++) this.ints(per, `edge ${k + 1} of ${name}`)
+        return
+      }
+      case 'pairs': {
+        const k = n(d.len, name)
+        for (let i = 0; i < k; i++) this.ints(2, `pair ${i + 1} of ${name}`)
+        return
+      }
+    }
+  }
+
+  run(stmts, env, decls) {
+    for (const s of stmts) {
+      if (s.kind === 'repeat') {
+        const t = this.size(s.count, env, s.line, 'the repeat count')
+        for (let k = 0; k < t; k++) this.run(s.body, Object.create(env), Object.create(decls))
+      } else if (s.kind === 'print') {
+        for (const it of s.items) {
+          if (it.str !== undefined) it.str.split(/\s+/).filter(Boolean).forEach(() => this.take(`"${it.str}"`))
+          else if (it.var) this.readVar(decls[it.var], env)
+          else if (it.expr.ref && env[it.expr.ref] === undefined) env[it.expr.ref] = this.int(it.expr.ref) // first print binds an int
+          else if (it.expr.ref) {
+            // Printed again (or inferred earlier from a length): values must agree.
+            const v = this.int(it.expr.ref)
+            if (v !== env[it.expr.ref]) this.fail(`sample line ${this.toks[this.pos - 1].line}: ${it.expr.ref} is ${v} here but ${env[it.expr.ref]} earlier`)
+          } else this.int(`the value on spec line ${s.line}`)
+        }
+      } else {
+        decls[s.name] = s
+      }
+    }
+  }
+}
+
+// Returns { ok: true } or { ok: false, message }.
+export function matchSample(ast, sampleInput) {
+  const m = new Matcher(sampleInput)
+  try {
+    m.run(ast, {}, {})
+    if (m.pos < m.toks.length) {
+      const tok = m.toks[m.pos]
+      return { ok: false, message: `sample line ${tok.line} has extra data ("${tok.t}") that the spec never prints` }
+    }
+    return { ok: true }
+  } catch (e) {
+    if (e instanceof MatchError) return { ok: false, message: e.message }
+    throw e
+  }
 }

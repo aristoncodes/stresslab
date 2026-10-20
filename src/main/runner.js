@@ -178,11 +178,43 @@ const crashInfo = (r) => ({
 })
 
 /**
+ * Runs both programs on the problem's sample before any random test.
+ * With an expected output, the brute must reproduce it (otherwise the brute is
+ * wrong) and the solution must match it. Returns a failure result, or null if OK.
+ */
+async function checkSample({ sol, brute, sample, baseTimeoutMs, compareMode, eps, controller }) {
+  const input = sample.input.endsWith('\n') ? sample.input : sample.input + '\n'
+  const expected = sample.output?.trim() ? sample.output : null
+  const [rs, rb] = await Promise.all([
+    runCompiled(sol, input, baseTimeoutMs, controller),
+    runCompiled(brute, input, baseTimeoutMs, controller)
+  ])
+  if (controller.stopped) return { verdict: 'STOPPED', test: 0 }
+
+  const base = { test: 0, onSample: true, input, solOut: rs.stdout, bruteOut: rb.stdout, solMs: rs.timeMs, bruteMs: rb.timeMs }
+  if (rb.timedOut || crashed(rb)) return { verdict: 'BRUTE_FAIL', which: 'brute', timedOut: rb.timedOut, ...base, ...crashInfo(rb) }
+  if (expected) {
+    const cb = compareOutputs(rb.stdout, expected, compareMode, eps)
+    if (!cb.ok) return { verdict: 'BRUTE_FAIL', which: 'brute', ...base, expectedOut: expected, message: `brute ${cb.message}` }
+  }
+  if (rs.timedOut) return { verdict: 'TLE', which: 'solution', ...base, ...crashInfo(rs) }
+  if (crashed(rs)) return { verdict: 'RE', which: 'solution', ...base, ...crashInfo(rs) }
+  const cmp = compareOutputs(rs.stdout, expected ?? rb.stdout, compareMode, eps)
+  if (!cmp.ok) return { verdict: 'WA', ...base, expectedOut: expected ?? undefined, message: cmp.message }
+  return null
+}
+
+/**
  * Runs sol vs brute until a difference, crash, timeout, Stop, or `tests` passes.
  * makeInput(i, seed) -> Promise<string>; onProgress({test, tests, elapsedMs, testsPerSec}).
+ * sample: optional { input, output } from the problem statement, checked first.
  * Returns a result object whose `verdict` is AC | WA | TLE | RE | BRUTE_FAIL | GEN_FAIL | STOPPED.
  */
-export async function stressLoop({ sol, brute, makeInput, tests, baseTimeoutMs, compareMode, eps, seed, onProgress, controller }) {
+export async function stressLoop({ sol, brute, makeInput, sample, tests, baseTimeoutMs, compareMode, eps, seed, onProgress, controller }) {
+  if (sample?.input?.trim()) {
+    const failed = await checkSample({ sol, brute, sample, baseTimeoutMs, compareMode, eps, controller })
+    if (failed) return failed
+  }
   const start = performance.now()
   let lastEmit = 0
   const progress = (test) => {

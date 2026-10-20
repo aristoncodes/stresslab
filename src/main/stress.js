@@ -2,8 +2,8 @@
 // (progress events, dock badge/progress bar, notification, failure window).
 import { app, Notification } from 'electron'
 import { randomInt } from 'crypto'
-import { runStress, createController } from './runner.js'
-import { parseSpec, generateInput, SpecError } from './generator.js'
+import { runStress, createController, compareOutputs } from './runner.js'
+import { parseSpec, generateInput, generateTest, SpecError } from './generator.js'
 import { getToolchains } from './toolchains.js'
 import { includeDir } from './paths.js'
 import { getSettings } from './settings.js'
@@ -22,15 +22,15 @@ function setDockProgress(fraction) {
 }
 
 /**
- * cfg: { sol, brute, mode: 'spec'|'custom', spec, gen, tests, timeoutSec, compareMode, eps, seed }
+ * cfg: { sol, brute, mode: 'spec'|'custom', spec, gen, sample, tests, timeoutSec, compareMode, eps, seed }
  * Returns { runId, seed } immediately; progress/result arrive as events on `sender`.
  */
 export async function startRun(cfg, sender) {
   if (active) throw new Error('A run is already in progress')
 
   let makeInput
+  let ast
   if (cfg.mode === 'spec') {
-    let ast
     try {
       ast = parseSpec(cfg.spec)
     } catch (e) {
@@ -56,6 +56,7 @@ export async function startRun(cfg, sender) {
     brute: cfg.brute,
     gen: cfg.mode === 'custom' ? cfg.gen : undefined,
     makeInput,
+    sample: cfg.sample,
     toolchains: await getToolchains(),
     includeDir: includeDir(),
     cppFlags: settings.cppFlags.split(/\s+/).filter(Boolean),
@@ -75,6 +76,7 @@ export async function startRun(cfg, sender) {
       active = null
       setDockProgress(-1)
       const full = { runId, runSeed: seed, sol: cfg.sol.lang, brute: cfg.brute.lang, ...result }
+      if (full.verdict === 'WA' && ast && !full.onSample) full.caseInfo = locateCase(ast, full, cfg)
       results.set(runId, full)
       if (results.size > MAX_RESULTS) results.delete(results.keys().next().value)
       send('stress:result', full)
@@ -82,6 +84,27 @@ export async function startRun(cfg, sender) {
     })
 
   return { runId, seed }
+}
+
+/**
+ * For multi-test inputs (top-level `repeat t`) with one output line per test
+ * case, find which case differs. The input is regenerated from the same seed
+ * (generation is deterministic) to get each case's line range.
+ */
+function locateCase(ast, r, cfg) {
+  const { cases } = generateTest(ast, { seed: r.seed, test: r.test, tests: cfg.tests })
+  const expected = r.bruteOut.trimEnd().split('\n')
+  const got = r.solOut.trimEnd().split('\n')
+  if (cases.length < 2 || expected.length !== cases.length) return null
+  const i = expected.findIndex((line, k) => !compareOutputs(got[k] ?? '', line, cfg.compareMode, cfg.eps).ok)
+  if (i < 0) return null
+  const lines = r.input.split('\n')
+  const { start, end } = cases[i]
+  const caseLines = lines.slice(start - 1, end)
+  // If the only line before the cases is the count t, the case can be run on its own as "1 + case".
+  const prefix = lines.slice(0, cases[0].start - 1)
+  const standalone = prefix.length === 1 && prefix[0].trim() === String(cases.length) ? ['1', ...caseLines].join('\n') + '\n' : null
+  return { index: i + 1, count: cases.length, start, end, input: caseLines.join('\n') + '\n', standalone, got: got[i] ?? '', expected: expected[i] }
 }
 
 function onFailure(result) {

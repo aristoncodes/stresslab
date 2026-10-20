@@ -1,6 +1,6 @@
 // LLM calls (main process only, built-in fetch, no SDKs).
 // Providers: Gemini (default), Groq (OpenAI-compatible), Ollama (local).
-import { validateSpec } from './generator.js'
+import { parseSpec, validateSpec, matchSample } from './generator.js'
 
 const TIMEOUT_MS = 60000
 // gemini-flash-latest is sometimes overloaded; the lite alias is much faster.
@@ -24,12 +24,14 @@ SPEC LANGUAGE (one statement per line, # starts a comment):
   repeat t { ... }                   repeat the block t times; the closing } goes on its own line
   print item item ...                print items on one line separated by spaces
 Ranges and sizes may use integers, earlier int variables and + - * / ^ ( ), e.g. 1..n-1.
+A size inside [ ] is ONE value, never a range: for a random length declare an int first (n: int 1..8) and write string[n].
 Declarations print nothing; only print lines produce output. Print everything in the exact order and line layout of the Input section.
 
 RULES FOR STRESS TESTING:
 - Shrink ALL sizes: every count, length, n, m, q, t must be at most 8.
 - Keep values small: within -10..10 (or 1..10 if values must be positive), unless the problem needs otherwise (e.g. values bounded by n, or characters limited to a set).
 - Keep every constraint that makes the input valid (distinctness, sortedness, connectivity, 1 <= l <= r <= n, etc.).
+- The sample input (if given) only shows the layout. Never copy its values; every value must come from a declaration.
 - Output ONLY the spec. No explanation, no markdown fences.`
 
 export const EXAMPLES = [
@@ -67,13 +69,35 @@ print x`
   }
 ]
 
-function buildMessages(problemText) {
+function buildMessages(problemText, sampleInput) {
   const msgs = []
   for (const ex of EXAMPLES) {
     msgs.push({ role: 'user', content: ex.input }, { role: 'assistant', content: ex.spec })
   }
-  msgs.push({ role: 'user', content: problemText })
+  const sample = sampleInput ? `\n\nSample input (the spec must print this exact layout):\n${sampleInput}` : ''
+  msgs.push({ role: 'user', content: problemText + sample })
   return msgs
+}
+
+// Parser check, then (if the user gave one) a check that the sample input has
+// the structure the spec describes. Returns { ok } or { ok: false, message }.
+function checkSpec(spec, sampleInput) {
+  const v = validateSpec(spec)
+  if (!v.ok) return v
+  // Models sometimes copy the sample's numbers instead of generating values.
+  const copied = (function find(stmts) {
+    for (const st of stmts) {
+      if (st.kind === 'repeat') {
+        const inner = find(st.body)
+        if (inner) return inner
+      }
+      if (st.kind === 'print' && st.items.length >= 2 && st.items.every((it) => it.expr?.num !== undefined)) return st.line
+    }
+  })(parseSpec(spec))
+  if (copied) return { ok: false, message: `line ${copied} prints fixed numbers; generate random values with declarations instead of copying the sample` }
+  if (!sampleInput) return v
+  const m = matchSample(parseSpec(spec), sampleInput)
+  return m.ok ? m : { ok: false, message: `the spec does not match the sample input: ${m.message}` }
 }
 
 async function postJson(url, body, headers = {}, timeoutMs = TIMEOUT_MS) {
@@ -163,11 +187,13 @@ function cleanSpec(text) {
 }
 
 /**
- * Problem text → validated spec. On a parser error, retries with the error
- * message (max 2 retries). Returns { ok, spec, attempts, model, fellBack, error? }.
+ * Problem text (+ optional sample input) → validated spec. On a parser error or
+ * a sample mismatch, retries with the error message (max 2 retries).
+ * Returns { ok, spec, attempts, model, fellBack, sampleChecked, error? }.
  */
-export async function specFromText(llm, problemText) {
-  const messages = buildMessages(problemText)
+export async function specFromText(llm, problemText, sampleInput = '') {
+  sampleInput = sampleInput.trim()
+  const messages = buildMessages(problemText, sampleInput)
   let spec = ''
   let error = ''
   let model = llm.model
@@ -175,16 +201,16 @@ export async function specFromText(llm, problemText) {
     const reply = await chat({ ...llm, model }, SYSTEM_PROMPT, messages)
     model = reply.model // after a fallback, keep using the model that answered
     spec = cleanSpec(reply.text)
-    const v = validateSpec(spec)
-    const info = { attempts: attempt, model, fellBack: model !== llm.model }
+    const v = checkSpec(spec, sampleInput)
+    const info = { attempts: attempt, model, fellBack: model !== llm.model, sampleChecked: !!sampleInput }
     if (v.ok) return { ok: true, spec, ...info }
     error = v.message
     messages.push(
       { role: 'assistant', content: spec },
-      { role: 'user', content: `The spec parser reported: ${error}\nFix it and output only the corrected spec.` }
+      { role: 'user', content: `Checking your spec reported: ${error}\nFix it and output only the corrected spec.` }
     )
   }
-  return { ok: false, spec, attempts: MAX_RETRIES + 1, model, fellBack: model !== llm.model, error }
+  return { ok: false, spec, attempts: MAX_RETRIES + 1, model, fellBack: model !== llm.model, sampleChecked: !!sampleInput, error }
 }
 
 // Settings "Test" button: a tiny round-trip to check provider/model/key.

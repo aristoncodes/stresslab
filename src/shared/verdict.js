@@ -4,21 +4,22 @@
 const ROLE = { solution: 'solution', brute: 'brute', generator: 'generator' }
 
 export function verdictText(r) {
+  const on = r.onSample ? 'sample' : `test ${r.test}` // failures on the problem's sample come first
   switch (r.verdict) {
     case 'RUNNING':
       return r.test ? `Running on test ${r.test}` : 'Compiling…'
     case 'AC':
       return `Accepted (${r.test} tests)`
     case 'WA':
-      return `Wrong answer on test ${r.test}`
+      return `Wrong answer on ${on}`
     case 'TLE':
-      return `Time limit exceeded on test ${r.test}`
+      return `Time limit exceeded on ${on}`
     case 'RE':
-      return `Runtime error on test ${r.test}`
+      return `Runtime error on ${on}`
     case 'BRUTE_FAIL':
-      return `Brute failed on test ${r.test}`
+      return `Brute failed on ${on}`
     case 'GEN_FAIL':
-      return `Generator failed on test ${r.test}`
+      return `Generator failed on ${on}`
     case 'CE':
       return `Compilation error (${ROLE[r.which] ?? r.which})`
     case 'STOPPED':

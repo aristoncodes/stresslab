@@ -1,5 +1,5 @@
 // Spec generator tests: `npm run gen-test`
-import { parseSpec, validateSpec, generateInput } from '../src/main/generator.js'
+import { parseSpec, validateSpec, generateInput, generateTest, matchSample } from '../src/main/generator.js'
 import { EXAMPLES } from '../src/main/llm.js'
 import { readFileSync } from 'fs'
 
@@ -20,6 +20,7 @@ check('unclosed repeat', errorOf('t: int 1..2\nrepeat t {\nprint t').includes('m
 check('stray brace', errorOf('}').includes('without matching'))
 check('no print', errorOf('n: int 1..3').includes('never prints'))
 check('array var in expression', errorOf('n: int 1..3\na: array[n] int 1..2\nb: array[a] int 1..2\nprint b').includes('not an int'))
+check('range inside [ ] explains the fix', errorOf('s: string[1..8] "a-z"\nprint s').includes('declare it first'))
 check('comments ignored', validateSpec('# hello\nn: int 1..3  # size\nprint n').ok)
 
 // --- Generation ---
@@ -77,6 +78,31 @@ try {
   thrown = e.message
 }
 check('impossible distinct is a line error', thrown.startsWith('line 1:'), thrown)
+
+// --- Sample matcher ---
+const match = (spec, sample) => matchSample(parseSpec(spec), sample)
+const ARR = 'n: int 1..8\na: array[n] int -10..10\nprint n\nprint a'
+check('sample matches (values outside spec range are fine)', match(ARR, '8\n-1 3 -2 5 3 -5 2 1000000000\n').ok)
+check('sample too short', match(ARR, '3\n1 2\n').message.includes('ended'), match(ARR, '3\n1 2\n').message)
+check('sample has extra data', match(ARR, '2\n1 2 3\n').message.startsWith('sample line 2 has extra data'))
+check('sample non-integer', match(ARR, '2\n1 x\n').message.includes('expected an integer'))
+const MT = 't: int 1..3\nprint t\nrepeat t {\n  n: int 1..8\n  s: string[n] "01"\n  print n\n  print s\n}'
+check('multi-test sample matches', match(MT, '2\n3\n010\n1\n1\n').ok)
+check('string charset mismatch', match(MT, '1\n3\nabc\n').message.includes('not in the spec\'s character set'))
+check('string length mismatch', match(MT, '1\n3\n01\n').message.includes('length 3'))
+check('tree sample matches', match('n: int 2..8\ne: tree n\nprint n\nprint e', '3\n1 2\n2 3\n').ok)
+check('sorted violated', !match('n: int 1..5\na: sorted[n] int 1..9\nprint n\nprint a', '3\n3 1 2').ok)
+check('size printed after the array is inferred', match('n: int 1..5\na: array[n] int 1..9\nprint a\nprint n', '1 2\n2').ok)
+check('inferred size must agree later', match('n: int 1..5\na: array[n] int 1..9\nprint a\nprint n', '1 2\n3').message.includes('n is 3 here but 2 earlier'))
+check('grid rows not printed is reported', match('n: int 1..5\ng: grid[n][2] "ab"\nprint g', 'ab\nba').message.includes("isn't printed before"))
+check('unprinted string length inferred', match('len: int 1..8\ns: string[len] "a-z"\nprint s', 'abacaba\n').ok)
+check('unprinted array length inferred', match('n: int 1..8\na: array[n] int 1..9\nprint a', '3 1 4 1 5\n').ok)
+check('grid sample matches', match('n: int 1..3\nm: int 1..3\ng: grid[n][m] ".#"\nprint n m\nprint g', '2 3\n.#.\n##.\n').ok)
+
+// --- Test-case line ranges for multi-test inputs ---
+const mt = generateTest(parseSpec('t: int 3..3\nprint t\nrepeat t {\n  n: int 2..2\n  a: array[n] int 1..9\n  print n\n  print a\n}'), { seed: 3 })
+check('cases recorded per repeat iteration', JSON.stringify(mt.cases) === JSON.stringify([{ start: 2, end: 3 }, { start: 4, end: 5 }, { start: 6, end: 7 }]), JSON.stringify(mt.cases))
+check('no cases without repeat', generateTest(parseSpec(ARR), { seed: 1 }).cases.length === 0)
 
 // The LLM few-shot examples and the demo spec must themselves be valid.
 EXAMPLES.forEach((ex, i) => check(`LLM example ${i + 1} is valid`, validateSpec(ex.spec).ok, validateSpec(ex.spec).message))

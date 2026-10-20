@@ -17,6 +17,12 @@ export default function SpecEditor({ spec, onChange, status, mode, onModeChange 
         {!status && <span className="muted">checking…</span>}
         {status?.ok && <span className="v-ok">✓ valid</span>}
         {status && !status.ok && <span className="v-wa">✗ {status.message}</span>}
+        {status?.sample && (
+          <span className={status.sample.ok ? 'v-ok' : 'v-wa'}>
+            {' · '}
+            {status.sample.ok ? '✓ matches sample input' : `✗ sample: ${status.sample.message}`}
+          </span>
+        )}
         <span className="muted">
           {' '}
           · types: int, array, distinct, sorted, perm, string, grid, tree, graph, pairs · repeat t {'{ }'} · print

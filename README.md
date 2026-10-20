@@ -16,9 +16,11 @@ Built with Electron for the *Application Development — Desktop Application* co
 - Toolchain detection on startup: Homebrew `g++-NN` preferred, Apple Clang fallback (with a link test, so a broken install is reported instead of failing every run), `python3`, and a real JDK via `/usr/libexec/java_home`.
 - Ships a `bits/stdc++.h` shim so CP-style C++ compiles with Apple Clang.
 - **Spec language** → random generator with a seeded RNG, line-numbered errors and **small-first growth** (first failing test is usually tiny).
-- **AI spec**: paste the problem's *Input* section → Gemini / Groq / Ollama writes the spec → the app validates it and retries with the parser error (max 2 retries).
+- **AI spec**: paste the problem's *Input* section → Groq (default) / Gemini / Ollama writes the spec → the app parses it, checks it against the problem's **sample input**, and retries with the error (max 2 retries). Gemini automatically falls back to `gemini-flash-lite-latest` when `gemini-flash-latest` is overloaded.
+- **Sample test**: paste the statement's sample input/output. Every run checks it first (the brute must print the sample output, then your solution must match it), and the spec box shows live whether the spec matches the sample's format.
+- **Exact failing case**: the failure window names the random test (#37, seed) and, for multi-test inputs, the failing **test case inside it** ("test case 3 of 5, input lines 6–7"), shown as a standalone `t = 1` input you can copy.
 - Custom generator mode: your own generator program in any of the 3 languages (seed in `argv[1]`).
-- Verdicts in Codeforces wording: *Accepted*, *Wrong answer on test N*, *Time limit exceeded*, *Runtime error*, *Compilation error*, *Brute failed*.
+- Verdicts in Codeforces wording: *Accepted*, *Wrong answer on test N* / *on sample*, *Time limit exceeded*, *Runtime error*, *Compilation error*, *Brute failed*.
 - Failure window with input, side-by-side diff, checker message, stderr/exit code for crashes; Copy and Save as .txt.
 - Native menu + shortcuts, notifications, dock badge and dock progress bar, encrypted API key storage.
 
@@ -60,7 +62,8 @@ npm run build:mac    # → dist/StressLab-1.0.0-arm64.dmg
 2. Press **⌘R** → *Wrong answer on test 1–3*, input `1 / -2`, and the failure window opens.
 3. Fix the bug (`samples/maxsub/sol_fixed.cpp`) → *Accepted (1000 tests)*.
 4. Switch the solution language to Java and open `samples/maxsub/Solution.java` → *Accepted*.
-5. Settings (⌘,) → add a free Gemini key → **Generate spec with AI** from the problem text.
+5. Settings (⌘,) → add a free Groq key (or Gemini) → **Generate spec with AI** from the problem text; the result is checked against the sample input.
+6. Multi-test demo: `samples/multitest/` (spec, sample, buggy C++, Python brute) → the failure window points at the failing test case.
 
 ## Spec language
 
@@ -91,6 +94,8 @@ repeat t {
   print s
 }
 ```
+
+**Sample check:** values are read in `print` order and the structure is verified (counts, `repeat t`, string lengths and character sets, sorted/distinct/perm, edges); value ranges are not checked because specs shrink them on purpose. Sizes that the input never prints (e.g. `|s|`) are inferred from the sample.
 
 **Small-first growth:** non-negative `int` declarations (sizes/counts) start at their minimum on test 1 and reach the maximum after ~¼ of the run (10–100 tests). Value ranges with negatives are not scaled.
 
@@ -124,9 +129,9 @@ repeat t {
 | Channel | Type | Purpose |
 |---|---|---|
 | `toolchains:get` | invoke | detected compilers/interpreters (optionally re-detect) |
-| `spec:validate` | invoke | parse a spec → `✓ valid` or `line N: …` |
-| `spec:fromText` | invoke | problem text → LLM → validated spec (with retries) |
-| `stress:start` | invoke | compile + start a run → `{ runId, seed }` |
+| `spec:validate` | invoke | `{ spec, sample }` → `✓ valid` or `line N: …`, plus whether the sample input matches |
+| `spec:fromText` | invoke | `{ text, sample }` → LLM → spec checked by parser + sample (with retries) |
+| `stress:start` | invoke | compile, check the sample, start a run → `{ runId, seed }` |
 | `stress:stop` | invoke | kill the active run |
 | `stress:progress` | event (main → renderer) | `{ test, tests, testsPerSec }`, throttled to 10/s |
 | `stress:result` | event (main → renderer) | final verdict + details |

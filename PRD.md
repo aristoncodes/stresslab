@@ -60,6 +60,8 @@ Students practicing on Codeforces / CSES / LeetCode / AtCoder, on macOS.
 | F13 | Settings window | Provider (Gemini / Groq / Ollama), model, API key, default test count, timeouts. Key encrypted with `safeStorage`, stored in `userData`. |
 | F14 | Custom generator mode | User supplies generator code (any of the 3 languages); app runs it with the seed as argv[1]. |
 | F15 | Desktop extras | Native menu with shortcuts (⌘O open, ⌘R run, ⌘. stop, ⌘, settings); `Notification` on failure; dock badge / progress bar; `dialog` open/save; `clipboard`; `shell.openPath` for saved cases. |
+| F20 | Sample test | User pastes the statement's sample input/output. Checked before random tests (brute must reproduce the sample output; solution must match). AI specs are validated against the sample input's structure and retried on mismatch. |
+| F21 | Failing test case | Failure window names the random test (#, seed); for multi-test inputs it identifies the failing case inside the input and shows it as a standalone t = 1 input. |
 
 ### P2 — nice to have
 | ID | Feature |
@@ -87,7 +89,7 @@ Launch → sidebar shows toolchains
 - **Renderer:** React + JavaScript, plain CSS, `@monaco-editor/react` with bundled Monaco (offline).
 - **Main process modules:** `index.js` (windows, menu, IPC), `runner.js`, `languages.js`, `compilers.js`, `generator.js`, `llm.js`, `settings.js`.
 - **IPC channels:** `toolchains:get`, `spec:fromText`, `spec:validate`, `stress:start`, `stress:stop`, `stress:progress` (event), `stress:result` (event), `file:open`, `file:saveText`, `settings:get`, `settings:set`, `failure:data`.
-- **LLM:** HTTP `fetch` from main. Default Gemini Flash (free tier, `gemini-flash-latest` alias), fallback Groq (OpenAI-compatible), offline Ollama.
+- **LLM:** HTTP `fetch` from main. Default Groq (`openai/gpt-oss-120b`, fastest in testing); Gemini (`gemini-flash-latest`, auto-fallback to `gemini-flash-lite-latest` when overloaded); offline Ollama.
 
 ## 8. Success criteria (demo script)
 

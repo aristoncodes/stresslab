@@ -7,7 +7,7 @@ import { join } from 'path'
 export const PROVIDERS = ['gemini', 'groq', 'ollama']
 
 const DEFAULTS = {
-  provider: 'gemini',
+  provider: 'groq', // fastest in testing; Gemini's flash alias was often overloaded
   models: { gemini: 'gemini-flash-latest', groq: 'openai/gpt-oss-120b', ollama: 'qwen2.5-coder:7b' },
   defaultTests: 1000,
   baseTimeoutSec: 2,

@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { cleanError } from '../lib/errors'
 
 const PROVIDERS = [
-  { id: 'gemini', label: 'Gemini', keyHint: 'Free key: aistudio.google.com/apikey' },
-  { id: 'groq', label: 'Groq', keyHint: 'Key: console.groq.com/keys' },
+  { id: 'groq', label: 'Groq', keyHint: 'Free key: console.groq.com/keys' },
+  { id: 'gemini', label: 'Gemini', keyHint: 'Free key: aistudio.google.com/apikey (falls back to flash-lite when busy)' },
   { id: 'ollama', label: 'Ollama (local)', keyHint: 'No key needed. Run: ollama serve' }
 ]
 

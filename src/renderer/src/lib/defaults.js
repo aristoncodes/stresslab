@@ -3,6 +3,8 @@ import sampleSol from '../../../../samples/maxsub/sol_buggy.cpp?raw'
 import sampleBrute from '../../../../samples/maxsub/brute.py?raw'
 import sampleSpec from '../../../../samples/maxsub/spec.txt?raw'
 import sampleInput from '../../../../samples/maxsub/input.txt?raw'
+import sampleTestIn from '../../../../samples/maxsub/sample_in.txt?raw'
+import sampleTestOut from '../../../../samples/maxsub/sample_out.txt?raw'
 
 export const LANGS = [
   { id: 'cpp', label: 'C++', monaco: 'cpp' },
@@ -31,6 +33,8 @@ export const GEN_TEMPLATES = {
 export const DEFAULT_STATE = {
   problem: sampleInput,
   spec: sampleSpec,
+  sampleIn: sampleTestIn, // the problem statement's sample test (optional)
+  sampleOut: sampleTestOut,
   mode: 'spec', // 'spec' | 'custom'
   sol: { lang: 'cpp', code: sampleSol },
   brute: { lang: 'python', code: sampleBrute },

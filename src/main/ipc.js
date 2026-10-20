@@ -4,7 +4,7 @@ import { ipcMain, dialog, clipboard, shell, BrowserWindow } from 'electron'
 import { readFileSync, writeFileSync, statSync } from 'fs'
 import { basename, extname } from 'path'
 import { getToolchains } from './toolchains.js'
-import { validateSpec } from './generator.js'
+import { validateSpec, parseSpec, matchSample } from './generator.js'
 import { startRun, stopRun, getResult } from './stress.js'
 import { getPublicSettings, saveSettings, getSettings, getApiKey, PROVIDERS } from './settings.js'
 import { specFromText, testConnection } from './llm.js'
@@ -36,11 +36,17 @@ function llmConfig(override = {}) {
 export function registerIpc() {
   ipcMain.handle('toolchains:get', (_e, refresh) => getToolchains(!!refresh))
 
-  ipcMain.handle('spec:validate', (_e, text) => (isStr(text) ? validateSpec(text) : { ok: false, message: 'Invalid spec' }))
+  // { spec, sample? } -> { ok, line?, message?, sample: null | { ok, message? } }
+  ipcMain.handle('spec:validate', (_e, { spec, sample } = {}) => {
+    if (!isStr(spec)) return { ok: false, message: 'Invalid spec', sample: null }
+    const v = validateSpec(spec)
+    const hasSample = isStr(sample) && sample.trim()
+    return { ...v, sample: v.ok && hasSample ? matchSample(parseSpec(spec), sample) : null }
+  })
 
-  ipcMain.handle('spec:fromText', async (_e, text) => {
+  ipcMain.handle('spec:fromText', async (_e, { text, sample } = {}) => {
     if (!isStr(text, 50000) || !text.trim()) throw new Error('Paste the problem\'s Input section first')
-    return specFromText(llmConfig(), text)
+    return specFromText(llmConfig(), text, isStr(sample, 50000) ? sample : '')
   })
 
   ipcMain.handle('stress:start', (e, cfg) => {
@@ -52,6 +58,7 @@ export function registerIpc() {
         mode: custom ? 'custom' : 'spec',
         spec: custom ? '' : isStr(cfg.spec) ? cfg.spec : '',
         gen: custom ? checkProgram(cfg.gen, 'generator') : undefined,
+        sample: isStr(cfg.sample?.input) && cfg.sample.input.trim() ? { input: cfg.sample.input, output: isStr(cfg.sample.output) ? cfg.sample.output : '' } : null,
         tests: Math.round(clamp(cfg.tests, 1, 100000, 1000)),
         timeoutSec: clamp(cfg.timeoutSec, 0.1, 60, 2),
         compareMode: cfg.compareMode === 'float' ? 'float' : 'exact',

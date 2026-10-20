@@ -6,6 +6,7 @@ import CodePane from '../components/CodePane'
 import Box from '../components/Box'
 import Sidebar from '../components/Sidebar'
 import StatusTable from '../components/StatusTable'
+import SampleBox from '../components/SampleBox'
 import { usePersistentState, hasSaved } from '../lib/persist'
 import { DEFAULT_STATE, TEMPLATES, GEN_TEMPLATES, langInfo } from '../lib/defaults'
 import { cleanError } from '../lib/errors'
@@ -34,12 +35,12 @@ export default function MainView() {
     }
   }, [refreshToolchains, set])
 
-  // Debounced live spec validation in the main process.
+  // Debounced live spec validation (and sample-format check) in the main process.
   useEffect(() => {
     setSpecStatus(null)
-    const t = setTimeout(() => window.api.validateSpec(state.spec).then(setSpecStatus), 300)
+    const t = setTimeout(() => window.api.validateSpec({ spec: state.spec, sample: state.sampleIn }).then(setSpecStatus), 300)
     return () => clearTimeout(t)
-  }, [state.spec])
+  }, [state.spec, state.sampleIn])
 
   // Progress / result events for the active run.
   useEffect(() => {
@@ -79,6 +80,7 @@ export default function MainView() {
         mode: state.mode,
         spec: state.spec,
         gen: state.gen,
+        sample: { input: state.sampleIn, output: state.sampleOut },
         tests: state.tests,
         timeoutSec: state.timeoutSec,
         compareMode: state.compareMode,
@@ -133,7 +135,12 @@ export default function MainView() {
         <main className="content">
           {state.mode === 'spec' ? (
             <>
-              <ProblemInput value={state.problem} onChange={(problem) => set({ problem })} onSpec={(spec) => set({ spec })} />
+              <ProblemInput
+                value={state.problem}
+                sample={state.sampleIn}
+                onChange={(problem) => set({ problem })}
+                onSpec={(spec) => set({ spec })}
+              />
               <SpecEditor
                 spec={state.spec}
                 onChange={(spec) => set({ spec })}
@@ -148,6 +155,7 @@ export default function MainView() {
               {pane('gen', 'Generator code', GEN_TEMPLATES, 240)}
             </Box>
           )}
+          <SampleBox input={state.sampleIn} output={state.sampleOut} onChange={set} />
           <div className="editors">
             {pane('sol', 'Solution')}
             {pane('brute', 'Brute')}

@@ -386,3 +386,25 @@ pre.io {
 .settings {
   padding: 12px;
 }
+
+/* ---- Sample box ---- */
+.sample-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.sample-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ---- Failing test case (multi-test inputs) ---- */
+.case-info {
+  border: 1px solid var(--wa);
+  padding: 6px 8px;
+}
+.case-info pre.io {
+  margin-top: 4px;
+}

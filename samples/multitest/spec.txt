@@ -1,0 +1,8 @@
+t: int 1..5
+print t
+repeat t {
+  n: int 1..8
+  a: array[n] int -10..10
+  print n
+  print a
+}

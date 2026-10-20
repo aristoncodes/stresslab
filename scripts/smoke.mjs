@@ -11,9 +11,13 @@ const sample = (f) => readFileSync(join(root, 'samples/maxsub', f), 'utf8')
 const includeDir = join(root, 'resources/include')
 
 let failures = 0
+let last = null // last stress result, printed when a check fails
 function check(name, cond, detail = '') {
   console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}${detail ? '  — ' + detail : ''}`)
-  if (!cond) failures++
+  if (!cond) {
+    failures++
+    if (last) console.log('      result:', JSON.stringify(last).slice(0, 600))
+  }
 }
 
 // Tiny inline generator (the real one arrives with the spec language):
@@ -51,7 +55,7 @@ const run = (opts) =>
     seed: 42,
     controller: createController(),
     ...opts
-  })
+  }).then((res) => (last = res))
 
 // Comparator unit checks
 check('compare: whitespace-insensitive', compareOutputs('1  2\n3\n', '1 2 3').ok)
@@ -63,13 +67,13 @@ check('java class detection', javaClassName('public final class Solution {') ===
 // 1. Buggy C++ vs Python brute must find a small mismatch
 let t = performance.now()
 let r = await run({ sol: { lang: 'cpp', code: sample('sol_buggy.cpp') }, brute: { lang: 'python', code: sample('brute.py') } })
-check('buggy C++ vs Python → WA', r.verdict === 'WA', `test ${r.test}, ${Math.round(performance.now() - t)} ms, ${r.message}`)
+check('buggy C++ vs Python → WA', r.verdict === 'WA', `${r.verdict} test ${r.test}, ${Math.round(performance.now() - t)} ms, ${r.message ?? r.stderr}`)
 check('failing input is small', r.input && Number(r.input.split('\n')[0]) <= 5, JSON.stringify(r.input))
 
 // 2. Fixed C++ passes everything
 t = performance.now()
 r = await run({ sol: { lang: 'cpp', code: sample('sol_fixed.cpp') }, brute: { lang: 'python', code: sample('brute.py') } })
-check('fixed C++ vs Python → AC', r.verdict === 'AC', `${r.test} tests in ${Math.round(performance.now() - t)} ms`)
+check('fixed C++ vs Python → AC', r.verdict === 'AC', `${r.verdict} ${r.test} tests in ${Math.round(performance.now() - t)} ms ${r.verdict === 'AC' ? '' : r.message ?? r.stderr}`)
 
 // 3. Java solution vs Python brute, inputs from a Python generator program
 t = performance.now()
@@ -94,14 +98,25 @@ check('non-zero exit → RE', r.verdict === 'RE' && r.exitCode === 3)
 r = await run({ sol: { lang: 'cpp', code: sample('sol_fixed.cpp') }, brute: { lang: 'python', code: 'import sys; sys.exit(1)' }, tests: 2 })
 check('brute crash → BRUTE_FAIL', r.verdict === 'BRUTE_FAIL')
 
-// 5. Stop kills the running process quickly
+// 5. Sample test from the problem statement is checked before random tests
+const sampleIn = sample('sample_in.txt')
+r = await run({ sol: { lang: 'cpp', code: sample('sol_buggy.cpp') }, brute, sample: { input: sampleIn, output: '9' } })
+check('sample passes, stress still finds bug', r.verdict === 'WA' && !r.onSample && r.test >= 1, JSON.stringify({ v: r.verdict, onSample: r.onSample, test: r.test, m: r.message, sol: r.solOut, brute: r.bruteOut }))
+r = await run({ sol: { lang: 'cpp', code: sample('sol_fixed.cpp') }, brute, sample: { input: sampleIn, output: '10' } })
+check('wrong expected sample output → brute fails sample', r.verdict === 'BRUTE_FAIL' && r.onSample, r.message)
+r = await run({ sol: { lang: 'python', code: 'print(0)' }, brute, sample: { input: sampleIn, output: '9' } })
+check('solution wrong on sample → WA on sample', r.verdict === 'WA' && r.onSample && r.test === 0)
+r = await run({ sol: { lang: 'python', code: 'print(0)' }, brute, sample: { input: sampleIn, output: '' } })
+check('sample without output compares sol vs brute', r.verdict === 'WA' && r.onSample)
+
+// 6. Stop kills the running process quickly
 const controller = createController()
 setTimeout(() => controller.stop(), 300)
 t = performance.now()
 r = await run({ sol: { lang: 'python', code: 'while True: pass' }, brute, controller, baseTimeoutMs: 10000 })
 check('Stop → STOPPED promptly', r.verdict === 'STOPPED' && performance.now() - t < 3000, `${Math.round(performance.now() - t)} ms`)
 
-// 6. Output cap
+// 7. Output cap
 const big = await runProcess({ cmd: '/bin/sh', args: ['-c', 'yes'], timeoutMs: 5000 })
 check('output over 1 MB is killed', big.outputLimit && big.stdout.length <= 1024 * 1024)
 

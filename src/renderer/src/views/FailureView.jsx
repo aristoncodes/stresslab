@@ -32,7 +32,14 @@ export default function FailureView({ runId }) {
       ) : (
         <>
           {r.input !== undefined && <InputSection r={r} />}
-          {r.verdict === 'WA' ? <DiffSection r={r} /> : <CrashSection r={r} />}
+          {r.caseInfo && <CaseSection c={r.caseInfo} />}
+          {r.verdict === 'WA' ? (
+            <DiffSection left={r.solOut} right={r.expectedOut ?? r.bruteOut} leftLabel="Output (yours)" rightLabel={r.expectedOut ? 'Expected (sample output)' : 'Expected (brute)'} message={r.message} />
+          ) : r.verdict === 'BRUTE_FAIL' && r.expectedOut ? (
+            <DiffSection left={r.bruteOut} right={r.expectedOut} leftLabel="Brute output" rightLabel="Expected (sample output)" message={r.message} />
+          ) : (
+            <CrashSection r={r} />
+          )}
         </>
       )}
     </div>
@@ -41,8 +48,9 @@ export default function FailureView({ runId }) {
 
 function meta(r) {
   const parts = []
+  if (r.onSample) parts.push('Sample test from the problem statement (checked before random tests)')
+  else if (r.test) parts.push(`Random test #${r.test}`)
   if (r.seed !== undefined) parts.push(`Seed: ${r.seed}`)
-  if (r.input) parts.push(`First line: ${r.input.split('\n')[0].slice(0, 40)}`)
   parts.push(`${langInfo(r.sol).label} vs ${langInfo(r.brute).label}`)
   if (r.solMs !== undefined) parts.push(`Sol ${r.solMs} ms`, `Brute ${r.bruteMs} ms`)
   return parts.join('  ·  ')
@@ -59,7 +67,7 @@ function InputSection({ r }) {
   }
   async function save() {
     try {
-      const path = await window.api.saveText({ text: r.input, defaultName: `failing-test-${r.test}.txt` })
+      const path = await window.api.saveText({ text: r.input, defaultName: r.onSample ? 'sample-input.txt' : `failing-test-${r.test}.txt` })
       if (path) setSaved(path)
     } catch (e) {
       setNote(cleanError(e))
@@ -69,7 +77,7 @@ function InputSection({ r }) {
   return (
     <section>
       <h2>
-        Input
+        {r.onSample ? 'Input (sample test)' : `Input of test #${r.test}`}
         <span className="actions">
           {note && <span className="small v-ok">{note}</span>}
           <button onClick={copy}>Copy</button>
@@ -93,18 +101,44 @@ function InputSection({ r }) {
   )
 }
 
-function DiffSection({ r }) {
+function DiffSection({ left, right, leftLabel, rightLabel, message }) {
   const dark = useDarkMode()
   return (
     <section className="grow">
       <div className="diff-labels">
-        <h2>Output (yours)</h2>
-        <h2>Expected (brute)</h2>
+        <h2>{leftLabel}</h2>
+        <h2>{rightLabel}</h2>
       </div>
       <div className="diff">
-        <DiffEditor original={r.solOut} modified={r.bruteOut} theme={monacoTheme(dark)} options={DIFF_OPTIONS} />
+        <DiffEditor original={left} modified={right} theme={monacoTheme(dark)} options={DIFF_OPTIONS} />
       </div>
-      <div className="checker">Checker: {r.message}</div>
+      <div className="checker">Checker: {message}</div>
+    </section>
+  )
+}
+
+// Multi-test input: which test case inside the input differs, shown on its own.
+function CaseSection({ c }) {
+  const [copied, setCopied] = useState(false)
+  const text = c.standalone ?? c.input
+  async function copy() {
+    await window.api.copyText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+  return (
+    <section className="case-info">
+      <h2>
+        <span className="v-wa">
+          Fails on test case {c.index} of {c.count} (input lines {c.start}–{c.end}): expected &quot;{c.expected}&quot;, found &quot;{c.got}&quot;
+        </span>
+        <span className="actions">
+          {copied && <span className="small v-ok">Copied</span>}
+          <button onClick={copy}>Copy this case</button>
+        </span>
+      </h2>
+      <div className="small muted">{c.standalone ? 'As a standalone input (t = 1):' : 'Lines of this test case:'}</div>
+      <pre className="io">{text}</pre>
     </section>
   )
 }

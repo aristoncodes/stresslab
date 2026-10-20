@@ -17,8 +17,8 @@ function on(channel) {
 const api = {
   // Toolchains / spec
   getToolchains: invoke('toolchains:get'), // (refresh?: boolean)
-  validateSpec: invoke('spec:validate'), // (text) -> { ok, line?, message? }
-  specFromText: invoke('spec:fromText'), // (problemText) -> { ok, spec, attempts, error? }
+  validateSpec: invoke('spec:validate'), // ({ spec, sample? }) -> { ok, line?, message?, sample }
+  specFromText: invoke('spec:fromText'), // ({ text, sample? }) -> { ok, spec, attempts, model, error? }
 
   // Stress runs
   startStress: invoke('stress:start'), // (config) -> { runId, seed }

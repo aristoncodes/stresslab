@@ -2,10 +2,10 @@
 
 > Claude Code: update this file at the end of every phase. Tick boxes, update the percentage, and add a line to the log.
 
-**Overall: 94% (49 / 52 tasks)**
+**Overall: 95% (53 / 56 tasks)**
 
 ```
-[███████████████████░] 94%
+[███████████████████░] 95%
 ```
 
 | Phase | Name | Tasks | Done | Status |
@@ -19,6 +19,7 @@
 | 6 | AI spec + Settings | 6 | 6 | ✅ Done |
 | 7 | Package & submit | 5 | 4 | 🟨 In progress |
 | 8 | Extras (P2) | 2 | 0 | ⬜ Not started |
+| 9 | Feedback round | 4 | 4 | ✅ Done |
 
 Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 
@@ -90,6 +91,12 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 - [x] Final demo run (C++ bug found, Java run, AI spec) — C++ + Java in packaged app; AI spec 4/4 problems on Groq and Gemini
 - [ ] Submit repo, AI chat link, .dmg on portal — your step (repo is private until you make it public)
 
+## Phase 9 — Feedback round (user requests)
+- [x] Groq as default provider (Gemini flash alias overloaded; Gemini kept with auto-fallback to flash-lite)
+- [x] Sample input/output box; sample checked before random tests (brute vs expected, then solution)
+- [x] AI spec checked against the sample input's structure, retried on mismatch; rejects copied sample values
+- [x] Failure window names the exact test (#, seed) and, for multi-test inputs, the failing test case as a standalone input
+
 ## Phase 8 — Extras (P2, only if time remains)
 - [ ] Complexity: AI Big-O estimate of the solution (`complexity:estimate`)
 - [ ] Complexity: measured timing over growing n + curve fit (`complexity:measure`)
@@ -109,3 +116,4 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 | 2026-10-20 22:34 | 7 | custom icon; dmg 133 MB arm64 (monaco moved to devDeps, was 152 MB); packaged app tested with empty env via CDP: toolchains ok, buggy C++ WA test 1, fixed C++ AC 200, Java AC (fixed: g++ needed PATH for `ld`); README |
 | 2026-10-20 22:34 | 2–6 | note: phases 2–6 were written together, so only the phase 6 commit builds on its own |
 | 2026-10-20 22:59 | 6–7 | live AI test: Groq gpt-oss-120b 4/4 valid specs in 0.6–2.2 s; Gemini 4/4 but gemini-flash-latest overloaded (503/timeouts) → added auto-fallback to gemini-flash-lite-latest after 30 s or 429/5xx; Groq default changed from retired llama-3.3-70b-versatile; dmg rebuilt |
+| 2026-10-20 23:17 | 9 | sample box + pre-run sample check; matchSample (infers unprinted sizes, checks re-printed values agree); AI retries on sample mismatch and copied values; Groq default; test-case locator for `repeat t` inputs. Groq: 7/7 problems valid (graph fixed by one sample-driven retry); e2e: case 3 of 4 located |
