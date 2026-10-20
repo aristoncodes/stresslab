@@ -2,16 +2,16 @@
 
 > Claude Code: update this file at the end of every phase. Tick boxes, update the percentage, and add a line to the log.
 
-**Overall: 10% (5 / 52 tasks)**
+**Overall: 25% (13 / 52 tasks)**
 
 ```
-[██░░░░░░░░░░░░░░░░░░] 10%
+[█████░░░░░░░░░░░░░░░] 25%
 ```
 
 | Phase | Name | Tasks | Done | Status |
 |---|---|---|---|---|
 | 0 | Setup | 5 | 5 | ✅ Done |
-| 1 | Run engine | 8 | 0 | ⬜ Not started |
+| 1 | Run engine | 8 | 8 | ✅ Done |
 | 2 | IPC + main UI | 8 | 0 | ⬜ Not started |
 | 3 | Spec generator | 8 | 0 | ⬜ Not started |
 | 4 | Failure window | 4 | 0 | ⬜ Not started |
@@ -32,14 +32,14 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 - [x] Add `resources/include/bits/stdc++.h` shim
 
 ## Phase 1 — Run engine (main process)
-- [ ] `compilers.js`: detect g++ (Homebrew first), python3, javac/java (`/usr/libexec/java_home`)
-- [ ] `languages.js`: config table for cpp / python / java with `timeScale`
-- [ ] Java public-class-name detection
-- [ ] Isolated temp dirs per program (`work/sol`, `work/brute`, `work/gen`)
-- [ ] Compile with captured stderr → CE result
-- [ ] Run with stdin, timeout + kill (TLE), exit code (RE)
-- [ ] Compare: exact (token-normalized) and float tolerance
-- [ ] Stress loop with stop flag; verified from a Node script
+- [x] `compilers.js`: detect g++ (Homebrew first), python3, javac/java (`/usr/libexec/java_home`)
+- [x] `languages.js`: config table for cpp / python / java with `timeScale`
+- [x] Java public-class-name detection
+- [x] Isolated temp dirs per program (`work/sol`, `work/brute`, `work/gen`)
+- [x] Compile with captured stderr → CE result
+- [x] Run with stdin, timeout + kill (TLE), exit code (RE)
+- [x] Compare: exact (token-normalized) and float tolerance
+- [x] Stress loop with stop flag; verified from a Node script
 
 ## Phase 2 — IPC + main UI
 - [ ] `preload` contextBridge API (narrow, documented)
@@ -100,3 +100,4 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 | Time | Phase | Note |
 |---|---|---|
 | 2026-10-20 22:10 | 0 | electron-vite React/JS scaffold, sandboxed secure window, local Monaco (0.57 worker path), bits/stdc++.h shim + extraResources, private GitHub repo |
+| 2026-10-20 22:40 | 1 | languages/compilers/runner; C++ link probe flags broken Clang; `npm run smoke` 16/16 pass (buggy C++ WA on test 1 n=1, Java+py gen AC, CE/TLE/RE/BRUTE_FAIL/Stop/output cap) |

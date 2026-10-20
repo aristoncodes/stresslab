@@ -12,7 +12,8 @@
     "build": "electron-vite build",
     "postinstall": "install-electron && electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
-    "build:mac": "npm run build && electron-builder --mac"
+    "build:mac": "npm run build && electron-builder --mac",
+    "smoke": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/smoke.mjs"
   },
   "dependencies": {
     "@electron-toolkit/utils": "^4.0.0",
