@@ -1,0 +1,59 @@
+/* Design tokens — see DESIGN.md §1 */
+:root {
+  --bg: #ffffff;
+  --bg-alt: #f8f8f8;
+  --border: #b9b9b9;
+  --border-light: #e1e1e1;
+  --text: #222222;
+  --text-muted: #666666;
+  --link: #0000cc;
+  --accent: #3b5998;
+  --ok: #008000;
+  --wa: #cc0000;
+  --tle: #b45f06;
+  --ce: #555555;
+  --running: #0000cc;
+  --font: Verdana, Arial, sans-serif;
+  --mono: 'SF Mono', Menlo, Consolas, monospace;
+  --fs: 13px;
+  --fs-small: 11px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1e1e;
+    --bg-alt: #262626;
+    --border: #444;
+    --border-light: #333;
+    --text: #ddd;
+    --text-muted: #999;
+    --link: #6ea8ff;
+    --accent: #2b3f66;
+    --ok: #4caf50;
+    --wa: #ff6b6b;
+    --tle: #f0a050;
+    --ce: #aaa;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--fs);
+}
+
+.header-bar {
+  background: var(--accent);
+  color: #fff;
+  font-weight: bold;
+  padding: 8px 12px;
+}

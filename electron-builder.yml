@@ -1,0 +1,29 @@
+appId: com.stresslab.app
+productName: StressLab
+directories:
+  buildResources: build
+  output: dist
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!samples/*'
+  - '!scripts/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md,PRD.md,DESIGN.md,PROGRESS.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+# bits/stdc++.h shim lives outside app.asar so g++ can read it
+# (resolved via process.resourcesPath/include, see src/main/paths.js).
+extraResources:
+  - from: resources/include
+    to: include
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+      arch: arm64
+  entitlementsInherit: build/entitlements.mac.plist
+  identity: null
+  notarize: false
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+npmRebuild: false
