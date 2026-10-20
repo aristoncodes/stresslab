@@ -1,0 +1,3 @@
+The first input line has an integer n: the size of the array.
+The second line has n integers x1, x2, ..., xn: the array contents.
+Constraints: 1 <= n <= 2*10^5, -10^9 <= xi <= 10^9

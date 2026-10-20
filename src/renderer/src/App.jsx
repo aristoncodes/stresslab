@@ -1,13 +1,20 @@
-import Editor from '@monaco-editor/react'
+import { useEffect, useState } from 'react'
+import MainView from './views/MainView'
+import FailureView from './views/FailureView'
+import SettingsView from './views/SettingsView'
 
-// Phase 0 placeholder: proves the secure window and local Monaco bundle work.
+// Every window loads the same bundle; main picks the view with the URL hash.
+// The failure window is reused, so re-render when main changes the hash.
 export default function App() {
-  return (
-    <div className="app">
-      <header className="header-bar">StressLab</header>
-      <div style={{ height: 300, border: '1px solid var(--border)', margin: 8 }}>
-        <Editor defaultLanguage="cpp" defaultValue={'#include <bits/stdc++.h>\nint main() {}\n'} />
-      </div>
-    </div>
-  )
+  const [hash, setHash] = useState(window.location.hash)
+  useEffect(() => {
+    const onChange = () => setHash(window.location.hash)
+    window.addEventListener('hashchange', onChange)
+    return () => window.removeEventListener('hashchange', onChange)
+  }, [])
+
+  const [view, arg] = hash.slice(1).split('/')
+  if (view === 'failure') return <FailureView key={arg} runId={arg} />
+  if (view === 'settings') return <SettingsView />
+  return <MainView />
 }

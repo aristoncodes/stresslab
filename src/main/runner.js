@@ -86,7 +86,9 @@ export async function compileProgram({ role, lang, code, runDir, toolchains, inc
   const { cmd, args } = L.compile(toolchains, dir, file, opts)
   const r = await runProcess({ cmd, args, cwd: dir, timeoutMs: COMPILE_TIMEOUT_MS, controller })
   if (r.code !== 0) {
-    return { ok: false, stderr: r.error || r.stderr || (r.timedOut ? 'Compilation timed out' : 'Compilation failed') }
+    // Show "main.cpp:3:5: error…" instead of the long temp-dir path.
+    const stderr = (r.error || r.stderr || (r.timedOut ? 'Compilation timed out' : 'Compilation failed')).replaceAll(dir + '/', '')
+    return { ok: false, stderr }
   }
   return { ok: true, lang, timeScale: L.timeScale, run: { ...L.run(toolchains, dir, code), cwd: dir } }
 }
