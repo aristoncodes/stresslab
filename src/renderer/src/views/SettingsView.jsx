@@ -79,7 +79,7 @@ export default function SettingsView() {
                     type="password"
                     disabled={s.provider === 'ollama'}
                     value={key}
-                    placeholder={s.hasKey[s.provider] ? 'saved (leave blank to keep)' : s.hasBuiltinKey?.[s.provider] ? 'using the built-in shared key' : ''}
+                    placeholder={s.hasKey[s.provider] ? 'saved (leave blank to keep)' : ''}
                     onChange={(e) => setKey(e.target.value)}
                   />{' '}
                   <button onClick={runTest}>Test</button>

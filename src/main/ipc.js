@@ -10,7 +10,6 @@ import { getPublicSettings, saveSettings, getSettings, getApiKey, PROVIDERS } fr
 import { specFromText, testConnection } from './llm.js'
 import { openFailureWindow, openSettingsWindow } from './windows.js'
 import { LANGUAGES } from './languages.js'
-import { builtinKey } from './builtinKeys.js'
 
 const MAX_CODE = 1024 * 1024
 const EXT_LANG = { '.cpp': 'cpp', '.cc': 'cpp', '.cxx': 'cpp', '.h': 'cpp', '.py': 'python', '.java': 'java' }
@@ -30,8 +29,7 @@ function llmConfig(override = {}) {
   return {
     provider,
     model: override.model || s.models[provider],
-    // The user's own key wins; the build's shared key is the fallback.
-    apiKey: override.apiKey || getApiKey(provider) || builtinKey(provider)
+    apiKey: override.apiKey || getApiKey(provider)
   }
 }
 

@@ -197,7 +197,7 @@ async function chatOnce({ provider, model, apiKey, timeoutMs }, system, messages
     return json?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? ''
   }
   if (provider === 'groq') {
-    if (!apiKey) throw new Error('No Groq API key. Add one in Settings (free at console.groq.com/keys).')
+    if (!apiKey) throw new Error('No Groq API key. Add one in Settings.')
     const json = await postJson(
       'https://api.groq.com/openai/v1/chat/completions',
       { model, temperature: 0.2, messages: [{ role: 'system', content: system }, ...messages] },

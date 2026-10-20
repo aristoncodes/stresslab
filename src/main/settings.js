@@ -3,7 +3,6 @@
 import { app, safeStorage } from 'electron'
 import { readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { builtinKey } from './builtinKeys.js'
 
 export const PROVIDERS = ['gemini', 'groq', 'ollama']
 
@@ -30,11 +29,7 @@ function load() {
 // Settings safe to hand to the renderer: keys replaced by "is a key saved?" flags.
 export function getPublicSettings() {
   const { keys, ...rest } = load()
-  return {
-    ...rest,
-    hasKey: Object.fromEntries(PROVIDERS.map((p) => [p, !!keys[p]])),
-    hasBuiltinKey: Object.fromEntries(PROVIDERS.map((p) => [p, !!builtinKey(p)]))
-  }
+  return { ...rest, hasKey: Object.fromEntries(PROVIDERS.map((p) => [p, !!keys[p]])) }
 }
 
 export function getSettings() {
@@ -44,7 +39,7 @@ export function getSettings() {
 // patch: any public fields, plus optional apiKey: { provider, value } ('' deletes).
 export function saveSettings(patch) {
   const s = load()
-  const { apiKey, hasKey: _k, hasBuiltinKey: _b, ...fields } = patch
+  const { apiKey, hasKey: _ignored, ...fields } = patch
   Object.assign(s, fields)
   if (apiKey && PROVIDERS.includes(apiKey.provider)) {
     if (!apiKey.value) delete s.keys[apiKey.provider]
