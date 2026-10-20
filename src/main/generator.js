@@ -1,0 +1,449 @@
+// Spec language → random test input. Pure functions (no Electron/Node APIs) so
+// it can be unit-tested with plain Node (scripts/gen-test.mjs).
+//
+// Grammar (one statement per line, `#` starts a comment):
+//   x: int L..R                       integer (L, R may use earlier ints: 1..n-1)
+//   a: array[n] int L..R              n integers
+//   a: distinct[n] int L..R           n distinct integers
+//   a: sorted[n] int L..R             n integers, non-decreasing
+//   p: perm[n]                        permutation of 1..n
+//   s: string[n] "a-z"                n chars from the set (ranges like a-z allowed)
+//   g: grid[n][m] ".#"                n lines of m chars
+//   e: tree n [weighted L..R]         n-1 edges "u v [w]"
+//   e: graph n m [connected] [weighted L..R]   m edges of a simple graph
+//   q: pairs[k] L..R                  k lines "l r" with L <= l <= r <= R
+//   repeat t { ... }                  repeat the block t times (fresh variables each time)
+//   print item item ...               items on one line, space separated (multi-line items keep their lines)
+// Expressions: integers (also 2e5, 10^9), int variables, + - * / ^ and parentheses.
+
+export class SpecError extends Error {
+  constructor(line, message) {
+    super(`line ${line}: ${message}`)
+    this.line = line
+  }
+}
+
+// ---------- RNG ----------
+
+export function mulberry32(seed) {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+// ---------- Tokenizer ----------
+
+const TOKEN = /\s*(?:(\d+(?:e\d+)?)|([A-Za-z_]\w*)|("(?:[^"\\]|\\.)*")|(\.\.|[:[\]{}()+\-*/^]))/y
+
+function tokenize(text, line) {
+  const tokens = []
+  TOKEN.lastIndex = 0
+  while (TOKEN.lastIndex < text.length) {
+    if (/^\s*$/.test(text.slice(TOKEN.lastIndex))) break
+    const start = TOKEN.lastIndex
+    const m = TOKEN.exec(text)
+    if (!m) throw new SpecError(line, `unexpected character "${text.slice(start).trim()[0]}"`)
+    if (m[1]) tokens.push({ type: 'num', value: Number(m[1]) })
+    else if (m[2]) tokens.push({ type: 'id', value: m[2] })
+    else if (m[3]) tokens.push({ type: 'str', value: m[3].slice(1, -1).replace(/\\(.)/g, '$1') })
+    else tokens.push({ type: 'op', value: m[4] })
+  }
+  return tokens
+}
+
+// ---------- Parser ----------
+
+const TYPES = ['int', 'array', 'distinct', 'sorted', 'perm', 'string', 'grid', 'tree', 'graph', 'pairs']
+
+// Recursive-descent over one line's tokens. `scope` maps declared names → kind.
+class LineParser {
+  constructor(tokens, line, scope) {
+    this.t = tokens
+    this.i = 0
+    this.line = line
+    this.scope = scope
+  }
+  peek(v) {
+    const tok = this.t[this.i]
+    return tok && (v === undefined || tok.value === v) ? tok : null
+  }
+  next() {
+    return this.t[this.i++]
+  }
+  expect(v, what = `"${v}"`) {
+    const tok = this.next()
+    if (!tok || tok.value !== v) this.fail(`expected ${what}${tok ? `, found "${tok.value}"` : ''}`)
+    return tok
+  }
+  fail(msg) {
+    throw new SpecError(this.line, msg)
+  }
+  done() {
+    if (this.i < this.t.length) this.fail(`unexpected "${this.t[this.i].value}"`)
+  }
+
+  // expr := term (('+'|'-') term)*
+  expr() {
+    let node = this.term()
+    while (this.peek('+') || this.peek('-')) node = { op: this.next().value, a: node, b: this.term() }
+    return node
+  }
+  term() {
+    let node = this.power()
+    while (this.peek('*') || this.peek('/')) node = { op: this.next().value, a: node, b: this.power() }
+    return node
+  }
+  power() {
+    const base = this.unary()
+    return this.peek('^') ? (this.next(), { op: '^', a: base, b: this.power() }) : base
+  }
+  unary() {
+    if (this.peek('-')) return this.next(), { op: 'neg', a: this.unary() }
+    const tok = this.next()
+    if (!tok) this.fail('expected a number or variable')
+    if (tok.type === 'num') return { num: tok.value }
+    if (tok.value === '(') {
+      const e = this.expr()
+      this.expect(')')
+      return e
+    }
+    if (tok.type === 'id') {
+      const kind = this.scope.get(tok.value)
+      if (!kind) this.fail(`unknown variable "${tok.value}"`)
+      if (kind !== 'int') this.fail(`"${tok.value}" is not an int and can't be used in an expression`)
+      return { ref: tok.value }
+    }
+    this.fail(`unexpected "${tok.value}"`)
+  }
+  range() {
+    const lo = this.expr()
+    this.expect('..', '"L..R" range')
+    return { lo, hi: this.expr() }
+  }
+  bracket() {
+    this.expect('[')
+    const e = this.expr()
+    this.expect(']')
+    return e
+  }
+  string() {
+    const tok = this.next()
+    if (!tok || tok.type !== 'str') this.fail('expected a quoted character set like "a-z"')
+    const chars = expandChars(tok.value)
+    if (!chars.length) this.fail('character set is empty')
+    return chars
+  }
+  weighted() {
+    if (!this.peek('weighted')) return null
+    this.next()
+    return this.range()
+  }
+
+  declaration(name) {
+    const type = this.next()
+    if (!type || !TYPES.includes(type.value)) {
+      this.fail(type ? `unknown type "${type.value}" (expected one of: ${TYPES.join(', ')})` : 'expected a type')
+    }
+    const d = { kind: type.value, name }
+    switch (type.value) {
+      case 'int':
+        d.range = this.range()
+        break
+      case 'array':
+      case 'distinct':
+      case 'sorted':
+        d.len = this.bracket()
+        if (this.peek('int')) this.next()
+        d.range = this.range()
+        break
+      case 'perm':
+        d.len = this.bracket()
+        break
+      case 'string':
+        d.len = this.bracket()
+        d.chars = this.string()
+        break
+      case 'grid':
+        d.rows = this.bracket()
+        d.cols = this.bracket()
+        d.chars = this.string()
+        break
+      case 'tree':
+        d.n = this.expr()
+        d.weight = this.weighted()
+        break
+      case 'graph':
+        d.n = this.expr()
+        d.m = this.expr()
+        if (this.peek('connected')) d.connected = !!this.next()
+        d.weight = this.weighted()
+        break
+      case 'pairs':
+        d.len = this.bracket()
+        d.range = this.range()
+        break
+    }
+    this.done()
+    return d
+  }
+
+  print() {
+    const items = []
+    while (this.i < this.t.length) {
+      const tok = this.peek()
+      if (tok.type === 'str') items.push({ str: this.next().value })
+      else if (tok.type === 'id' && this.scope.get(tok.value) && this.scope.get(tok.value) !== 'int') {
+        items.push({ var: this.next().value })
+      } else items.push({ expr: this.expr() })
+    }
+    if (!items.length) this.fail('print needs at least one item')
+    return { kind: 'print', items }
+  }
+}
+
+function expandChars(s) {
+  let out = ''
+  for (let i = 0; i < s.length; i++) {
+    if (s[i + 1] === '-' && i + 2 < s.length) {
+      for (let c = s.charCodeAt(i); c <= s.charCodeAt(i + 2); c++) out += String.fromCharCode(c)
+      i += 2
+    } else out += s[i]
+  }
+  return [...new Set(out)]
+}
+
+// Parse the whole spec into a list of statements. Throws SpecError.
+export function parseSpec(text) {
+  const root = []
+  const stack = [{ body: root, scope: new Map(), line: 0 }]
+  text.split('\n').forEach((raw, idx) => {
+    const line = idx + 1
+    // Strip `# comments`, but not a # inside a quoted char set like ".#".
+    const src = raw.replace(/("(?:[^"\\]|\\.)*")|#.*/g, (m, quoted) => quoted ?? '')
+    const tokens = tokenize(src, line)
+    if (!tokens.length) return
+    const top = stack[stack.length - 1]
+    const p = new LineParser(tokens, line, top.scope)
+    const first = tokens[0]
+
+    if (first.value === '}') {
+      if (stack.length === 1) p.fail('"}" without matching "repeat"')
+      p.next()
+      p.done()
+      stack.pop()
+    } else if (first.value === 'repeat') {
+      p.next()
+      const count = p.expr()
+      p.expect('{', '"{" at the end of the repeat line')
+      p.done()
+      const block = { kind: 'repeat', count, body: [], line }
+      top.body.push(block)
+      stack.push({ body: block.body, scope: new Map(top.scope), line })
+    } else if (first.value === 'print') {
+      p.next()
+      top.body.push({ ...p.print(), line })
+    } else if (first.type === 'id' && tokens[1]?.value === ':') {
+      p.i = 2
+      if (TYPES.includes(first.value) || ['print', 'repeat'].includes(first.value)) {
+        p.fail(`"${first.value}" is a keyword and can't be a variable name`)
+      }
+      const d = p.declaration(first.value)
+      top.body.push({ ...d, line })
+      top.scope.set(first.value, d.kind)
+    } else {
+      p.fail(`expected "name: type ...", "print ..." or "repeat ... {", found "${first.value}"`)
+    }
+  })
+  if (stack.length > 1) throw new SpecError(stack[stack.length - 1].line, 'repeat block is missing "}"')
+  if (!root.some(function hasPrint(s) { return s.kind === 'print' || (s.kind === 'repeat' && s.body.some(hasPrint)) })) {
+    throw new SpecError(1, 'spec never prints anything (add a "print" line)')
+  }
+  return root
+}
+
+export function validateSpec(text) {
+  try {
+    parseSpec(text)
+    return { ok: true }
+  } catch (e) {
+    if (e instanceof SpecError) return { ok: false, line: e.line, message: e.message }
+    throw e
+  }
+}
+
+// ---------- Generator ----------
+
+const MAX_OUTPUT = 1_000_000 // characters; protects the app from runaway specs
+const MAX_ITEMS = 200_000
+
+// Small-first growth: sizes start at their minimum and reach the spec maximum after
+// `ramp` tests (≈ first quarter of the run, between 10 and 100 tests).
+export function sizeScale(test, tests) {
+  const ramp = Math.min(100, Math.max(10, Math.floor(tests / 4)))
+  return Math.min(1, (test - 1) / ramp)
+}
+
+class Gen {
+  constructor(seed, scale) {
+    this.rnd = mulberry32(seed)
+    this.scale = scale
+    this.out = []
+    this.size = 0
+  }
+  int(lo, hi) {
+    return lo + Math.floor(this.rnd() * (hi - lo + 1))
+  }
+  shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = this.int(0, i)
+      ;[a[i], a[j]] = [a[j], a[i]]
+    }
+    return a
+  }
+  eval(e, env, line) {
+    if (e.num !== undefined) return e.num
+    if (e.ref) return env[e.ref]
+    const a = this.eval(e.a, env, line)
+    if (e.op === 'neg') return -a
+    const b = this.eval(e.b, env, line)
+    switch (e.op) {
+      case '+': return a + b
+      case '-': return a - b
+      case '*': return a * b
+      case '/':
+        if (b === 0) throw new SpecError(line, 'division by zero')
+        return Math.trunc(a / b)
+      case '^': return a ** b
+    }
+  }
+  range(r, env, line) {
+    const lo = this.eval(r.lo, env, line)
+    const hi = this.eval(r.hi, env, line)
+    if (lo > hi) throw new SpecError(line, `empty range ${lo}..${hi}`)
+    return [lo, hi]
+  }
+  count(e, env, line, what) {
+    const n = this.eval(e, env, line)
+    if (n < 0) throw new SpecError(line, `${what} is negative (${n})`)
+    if (n > MAX_ITEMS) throw new SpecError(line, `${what} ${n} is too large for stress testing`)
+    return n
+  }
+  edges(n, pairs, weight, env, line) {
+    const label = this.shuffle(Array.from({ length: n }, (_, i) => i + 1))
+    const w = weight ? this.range(weight, env, line) : null
+    return this.shuffle(pairs).map(([u, v]) => {
+      if (this.rnd() < 0.5) [u, v] = [v, u]
+      return [label[u], label[v], ...(w ? [this.int(w[0], w[1])] : [])].join(' ')
+    })
+  }
+
+  value(d, env) {
+    const { line } = d
+    switch (d.kind) {
+      case 'int': {
+        let [lo, hi] = this.range(d.range, env, line)
+        if (lo >= 0) hi = lo + Math.round((hi - lo) * this.scale) // sizes/counts grow over time
+        return this.int(lo, hi)
+      }
+      case 'array':
+      case 'sorted': {
+        const n = this.count(d.len, env, line, 'array length')
+        const [lo, hi] = this.range(d.range, env, line)
+        const a = Array.from({ length: n }, () => this.int(lo, hi))
+        return d.kind === 'sorted' ? a.sort((x, y) => x - y) : a
+      }
+      case 'distinct': {
+        const n = this.count(d.len, env, line, 'array length')
+        const [lo, hi] = this.range(d.range, env, line)
+        if (hi - lo + 1 < n) throw new SpecError(line, `can't pick ${n} distinct values from ${lo}..${hi}`)
+        const seen = new Set()
+        while (seen.size < n) seen.add(this.int(lo, hi))
+        return this.shuffle([...seen])
+      }
+      case 'perm':
+        return this.shuffle(Array.from({ length: this.count(d.len, env, line, 'perm length') }, (_, i) => i + 1))
+      case 'string': {
+        const n = this.count(d.len, env, line, 'string length')
+        return Array.from({ length: n }, () => d.chars[this.int(0, d.chars.length - 1)]).join('')
+      }
+      case 'grid': {
+        const r = this.count(d.rows, env, line, 'grid rows')
+        const c = this.count(d.cols, env, line, 'grid columns')
+        return Array.from({ length: r }, () =>
+          Array.from({ length: c }, () => d.chars[this.int(0, d.chars.length - 1)]).join('')
+        )
+      }
+      case 'tree': {
+        const n = this.count(d.n, env, line, 'tree size')
+        if (n < 1) throw new SpecError(line, 'tree needs at least 1 node')
+        const pairs = []
+        for (let v = 1; v < n; v++) pairs.push([this.int(0, v - 1), v])
+        return this.edges(n, pairs, d.weight, env, line)
+      }
+      case 'graph': {
+        const n = this.count(d.n, env, line, 'graph size')
+        const maxM = (n * (n - 1)) / 2
+        let m = this.count(d.m, env, line, 'edge count')
+        // Clamp to what's possible rather than failing mid-run.
+        m = Math.min(m, maxM)
+        if (d.connected) m = Math.max(m, n - 1)
+        const key = (u, v) => (u < v ? u * n + v : v * n + u)
+        const used = new Set()
+        const pairs = []
+        const add = (u, v) => {
+          if (u === v || used.has(key(u, v))) return false
+          used.add(key(u, v))
+          pairs.push([u, v])
+          return true
+        }
+        if (d.connected) for (let v = 1; v < n; v++) add(this.int(0, v - 1), v)
+        while (pairs.length < m) add(this.int(0, n - 1), this.int(0, n - 1))
+        return this.edges(n, pairs, d.weight, env, line)
+      }
+      case 'pairs': {
+        const k = this.count(d.len, env, line, 'pair count')
+        const [lo, hi] = this.range(d.range, env, line)
+        return Array.from({ length: k }, () => {
+          const a = this.int(lo, hi)
+          const b = this.int(lo, hi)
+          return `${Math.min(a, b)} ${Math.max(a, b)}`
+        })
+      }
+    }
+  }
+
+  run(stmts, env) {
+    for (const s of stmts) {
+      if (s.kind === 'print') {
+        const parts = s.items.map((it) => {
+          if (it.str !== undefined) return it.str
+          if (it.expr) return String(this.eval(it.expr, env, s.line))
+          const v = env[it.var]
+          if (!Array.isArray(v)) return String(v) // string
+          // Edge/pair/grid lists are one entry per line; number arrays are space separated.
+          return v.join(typeof v[0] === 'string' ? '\n' : ' ')
+        })
+        const text = parts.join(' ') + '\n'
+        this.size += text.length
+        if (this.size > MAX_OUTPUT) throw new SpecError(s.line, 'generated input is larger than 1 MB')
+        this.out.push(text)
+      } else if (s.kind === 'repeat') {
+        const t = this.count(s.count, env, s.line, 'repeat count')
+        for (let k = 0; k < t; k++) this.run(s.body, Object.create(env))
+      } else {
+        env[s.name] = this.value(s, env)
+      }
+    }
+  }
+}
+
+// Generate one test input string. `test` is 1-based; `tests` the planned total.
+export function generateInput(ast, { seed, test = 1, tests = 1 }) {
+  const g = new Gen(seed, sizeScale(test, tests))
+  g.run(ast, {})
+  return g.out.join('')
+}

@@ -13,7 +13,9 @@
     "postinstall": "install-electron && electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:mac": "npm run build && electron-builder --mac",
-    "smoke": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/smoke.mjs"
+    "smoke": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/smoke.mjs",
+    "gen-test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gen-test.mjs",
+    "test": "npm run gen-test && npm run smoke"
   },
   "dependencies": {
     "@electron-toolkit/utils": "^4.0.0",
