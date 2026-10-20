@@ -1,6 +1,6 @@
 // Spec generator tests: `npm run gen-test`
 import { parseSpec, validateSpec, generateInput, generateTest, matchSample, PROFILES, profileFor } from '../src/main/generator.js'
-import { EXAMPLES } from '../src/main/llm.js'
+import { EXAMPLES, checkSpec } from '../src/main/llm.js'
 import { readFileSync } from 'fs'
 
 let failures = 0
@@ -116,7 +116,8 @@ check('`full` range parses', validateSpec(FULL).ok)
 check('random ignores full range', prof(FULL, 'random').trim().split('\n')[1].split(' ').every((x) => Math.abs(+x) <= 10))
 const maxOut = prof(FULL, 'max').trim().split('\n')
 check('max: largest size', maxOut[0] === '8', maxOut[0])
-check('max: values at the real limits', maxOut[1].split(' ').every((x) => x === '1000000000' || x === '-1000000000'), maxOut[1])
+const maxVals = Array.from({ length: 30 }, (_, sd) => prof(FULL, 'max', sd).trim().split('\n')[1].split(' ')).flat()
+check('max: values mostly at the real limits', maxVals.filter((x) => Math.abs(+x) === 1e9).length / maxVals.length > 0.65 && maxVals.every((x) => Math.abs(+x) <= 1e9))
 const edgeOut = prof(FULL, 'edge').trim().split('\n')
 check('edge: smallest size', edgeOut[0] === '1')
 const edgeVals = new Set(Array.from({ length: 40 }, (_, sd) => prof(FULL, 'edge', sd).trim().split('\n')[1]))
@@ -128,16 +129,24 @@ const deg = {}
 pathTree.flat().forEach((v) => (deg[v] = (deg[v] || 0) + 1))
 check('max: tree is a path (all degrees <= 2)', Object.values(deg).every((d) => d <= 2) && connected(6, pathTree))
 check('edge: k = 1 when k is a size', prof('n: int 1..8\nk: int 1..n\nprint n k', 'edge').trim() === '1 1')
-check('max: k = n when k is a size', prof('n: int 1..8\nk: int 1..n\nprint n k', 'max').trim() === '8 8')
+check('max: independent sizes at max', prof('n: int 1..8\nm: int 1..8\nprint n m', 'max').trim() === '8 8')
+check('max: dependent sizes stay random', new Set(Array.from({ length: 30 }, (_, sd) => prof('n: int 1..8\nk: int 1..n\nprint k', 'max', sd).trim())).size > 3)
 check('edge: pairs have l == r', prof('q: pairs[4] 1..9\nprint q', 'edge').trim().split('\n').every((l) => l.split(' ')[0] === l.split(' ')[1]))
-check('max: string uses the last character', prof('s: string[5] "a-c"\nprint s', 'max').trim() === 'ccccc')
-check('weighted full range used by max', prof('n: int 3..3\ne: tree n weighted 1..10 full 1..10^9\nprint e', 'max').includes('1000000000'))
+check('max: strings stay random', new Set(Array.from({ length: 20 }, (_, sd) => prof('s: string[6] "01"\nprint s', 'max', sd).trim())).size > 5)
+check('weighted full range used by max', [1, 2, 3, 4, 5].some((sd) => prof('n: int 3..3\ne: tree n weighted 1..10 full 1..10^9\nprint e', 'max', sd).includes('1000000000')))
 check('profiles cycle by test number', [1, 2, 3, 4, 5].map((t) => profileFor(t)).join() === 'random,edge,max,pattern,random')
 check('profile subset cycles', [1, 2, 3].map((t) => profileFor(t, ['random', 'max'])).join() === 'random,max,random')
 check('all profiles generate valid multi-test input', PROFILES.every((pr) => matchSample(parseSpec(MT), prof(MT, pr)).ok))
 
 // The LLM few-shot examples and the demo spec must themselves be valid.
 EXAMPLES.forEach((ex, i) => check(`LLM example ${i + 1} is valid`, validateSpec(ex.spec).ok, validateSpec(ex.spec).message))
+EXAMPLES.forEach((ex, i) => check(`LLM example ${i + 1} passes the limits check`, checkSpec(ex.spec, '').ok, checkSpec(ex.spec, '').message))
+const L = (lines) => checkSpec(lines.join('\n'), '')
+check('limits: missing limit lines rejected', L(['n: int 1..8', 'print n']).message.includes('# limit'))
+check('limits: size minimum must match', L(['# limit n: 1..2*10^5', 'n: int 2..8', 'print n']).message.includes('keep the real minimum'))
+check('limits: value needs full range', L(['# limit n: 1..8', '# limit a: 0..10^9', 'n: int 1..8', 'a: array[n] int 0..10', 'print a']).message.includes('no "full'))
+check('limits: full range must match', L(['# limit n: 1..8', '# limit a: 0..10^9', 'n: int 1..8', 'a: array[n] int 0..10 full 0..10^6', 'print a']).message.includes('full range is 0..1000000'))
+check('limits: consistent spec passes', L(['# limit t: 1..10^4', '# limit n: 1..500', '# limit a_ij: 0..1e9', 't: int 1..3', 'print t', 'repeat t {', 'n: int 1..8', 'a: array[n] int 0..10 full 0..10^9', 'print n', 'print a', '}']).ok)
 check('samples/maxsub/spec.txt is valid', validateSpec(readFileSync(new URL('../samples/maxsub/spec.txt', import.meta.url), 'utf8')).ok)
 
 console.log(failures ? `\n${failures} check(s) failed` : '\nAll generator checks passed')

@@ -1,6 +1,6 @@
 // LLM calls (main process only, built-in fetch, no SDKs).
 // Providers: Gemini (default), Groq (OpenAI-compatible), Ollama (local).
-import { parseSpec, validateSpec, matchSample } from './generator.js'
+import { parseSpec, validateSpec, matchSample, constValue, constOf, declarations } from './generator.js'
 
 const TIMEOUT_MS = 60000
 // gemini-flash-latest is sometimes overloaded; the lite alias is much faster.
@@ -9,6 +9,13 @@ const FALLBACK_AFTER_MS = 30000 // give the primary Gemini model this long befor
 const MAX_RETRIES = 2
 
 const SYSTEM_PROMPT = `You convert the "Input" section of a competitive programming problem into a small test-generator spec.
+
+Work in two steps and output both:
+STEP 1 - LIMITS: start with one comment line per constraint in the statement, with its real minimum and maximum:
+  # limit n: 1..2*10^5
+  # limit a: -10^9..10^9
+  Cover every size, count and value (use the variable names you will declare; for elements write the array's name).
+STEP 2 - SPEC: write the spec so the tests reach every limit: each size keeps its real minimum (its maximum shrinks to 8), and each value range ends with "full MIN..MAX" from its limit line.
 
 SPEC LANGUAGE (one statement per line, # starts a comment):
   x: int L..R                        random integer in [L, R]
@@ -35,13 +42,16 @@ RULES FOR STRESS TESTING:
 - For every VALUE range (array elements, weights, standalone values; NOT sizes or counts), add "full A..B" with the real bounds from the statement, e.g. a: array[n] int -10..10 full -10^9..10^9 The app uses them for max-value and edge-case tests.
 - Keep every constraint that makes the input valid (distinctness, sortedness, connectivity, 1 <= l <= r <= n, etc.).
 - The sample input (if given) only shows the layout. Never copy its values; every value must come from a declaration.
-- Output ONLY the spec. No explanation, no markdown fences.`
+- Output ONLY the limit lines and the spec. No explanation, no markdown fences.`
 
 export const EXAMPLES = [
   {
     input: `The first line contains two integers n and k (1 <= n <= 2*10^5, 1 <= k <= n).
 The second line contains n integers a_1..a_n (-10^9 <= a_i <= 10^9).`,
-    spec: `n: int 1..8
+    spec: `# limit n: 1..2*10^5
+# limit k: 1..n
+# limit a: -10^9..10^9
+n: int 1..8
 k: int 1..n
 a: array[n] int -10..10 full -10^9..10^9
 print n k
@@ -50,7 +60,9 @@ print a`
   {
     input: `The first line contains t (1 <= t <= 10^4), the number of test cases.
 Each test case consists of a line with n (1 <= n <= 10^5) and a line with a binary string s of length n.`,
-    spec: `t: int 1..3
+    spec: `# limit t: 1..10^4
+# limit n: 1..10^5
+t: int 1..3
 print t
 repeat t {
   n: int 1..8
@@ -61,7 +73,10 @@ repeat t {
   },
   {
     input: `The first line contains n (2 <= n <= 2*10^5), the number of vertices. Each of the next n-1 lines contains u, v and w (1 <= w <= 10^9): an edge of the tree with weight w. The last line contains q queries... Then q lines follow, each with two vertices x y.`,
-    spec: `n: int 2..8
+    spec: `# limit n: 2..2*10^5
+# limit w: 1..10^9
+# limit q: 1..2*10^5
+n: int 2..8
 e: tree n weighted 1..10 full 1..10^9
 q: int 1..8
 x: pairs[q] 1..n
@@ -82,11 +97,47 @@ function buildMessages(problemText, sampleInput) {
   return msgs
 }
 
-// Parser check, then (if the user gave one) a check that the sample input has
-// the structure the spec describes. Returns { ok } or { ok: false, message }.
-function checkSpec(spec, sampleInput) {
+// "# limit name: MIN..MAX" lines the model lists before the spec.
+function parseLimits(spec) {
+  return [...spec.matchAll(/^\s*#\s*limit\s+([A-Za-z]\w*)[^:]*:\s*(.+?)\s*\.\.\s*(.+?)\s*$/gm)].map((m) => ({
+    name: m[1].replace(/_(i|j|ij|k)$/i, ''), // a_i → a
+    min: m[2],
+    max: m[3]
+  }))
+}
+
+// Checks that the spec reaches the limits the model itself listed: sizes keep
+// their real minimum, values carry "full MIN..MAX". Returns an error or null.
+function checkLimits(spec) {
+  const limits = parseLimits(spec)
+  if (!limits.length) return 'start with "# limit name: MIN..MAX" lines for every constraint'
+  const decls = declarations(parseSpec(spec))
+  for (const lim of limits) {
+    const d = decls[lim.name]
+    if (!d?.range) continue // no matching declaration (e.g. a sum constraint) or not a ranged type
+    const [min, max] = [constValue(lim.min), constValue(lim.max)]
+    if (d.range.full) {
+      const [lo, hi] = [constOf(d.range.full.lo), constOf(d.range.full.hi)]
+      if ((min !== null && lo !== null && lo !== min) || (max !== null && hi !== null && hi !== max)) {
+        return `${lim.name}: limit is ${lim.min}..${lim.max} but its full range is ${lo}..${hi}`
+      }
+    } else if (d.kind === 'int' && min !== null && min >= 0) {
+      const lo = constOf(d.range.lo)
+      if (lo !== null && lo !== min) return `${lim.name}: limit minimum is ${lim.min} but the spec starts at ${lo} (keep the real minimum)`
+    } else if (d.kind !== 'int' && max !== null && max > (constOf(d.range.hi) ?? Infinity)) {
+      return `${lim.name}: limit is ${lim.min}..${lim.max} but the spec has no "full ${lim.min}..${lim.max}"`
+    }
+  }
+  return null
+}
+
+// Parser check, limits check, then (if the user gave one) a check that the sample
+// input has the structure the spec describes. Returns { ok } or { ok: false, message }.
+export function checkSpec(spec, sampleInput) {
   const v = validateSpec(spec)
   if (!v.ok) return v
+  const limitError = checkLimits(spec)
+  if (limitError) return { ok: false, message: limitError }
   // Models sometimes copy the sample's numbers instead of generating values.
   const copied = (function find(stmts) {
     for (const st of stmts) {

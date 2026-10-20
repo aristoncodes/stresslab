@@ -284,6 +284,36 @@ export function parseSpec(text) {
   return root
 }
 
+// Value of a constant expression like "2*10^5" or "1e9"; null if it isn't one.
+export function constValue(text) {
+  try {
+    const p = new LineParser(tokenize(String(text), 1), 1, new Map())
+    const e = p.expr()
+    p.done()
+    return evalExpr(e, {}, 1)
+  } catch {
+    return null
+  }
+}
+
+// Value of a parsed constant expression (no variables); null otherwise.
+export function constOf(e) {
+  try {
+    return e ? evalExpr(e, {}, 1) : null
+  } catch {
+    return null
+  }
+}
+
+// All declarations in a parsed spec (including inside repeat blocks), by name.
+export function declarations(ast, out = {}) {
+  for (const s of ast) {
+    if (s.kind === 'repeat') declarations(s.body, out)
+    else if (s.kind !== 'print') out[s.name] = s
+  }
+  return out
+}
+
 export function validateSpec(text) {
   try {
     parseSpec(text)
@@ -309,7 +339,9 @@ export function sizeScale(test, tests) {
 // Test generators ("profiles"). A run cycles through the enabled ones by test number.
 //   random  — small random tests that grow (small-first)
 //   edge    — minimum sizes, values at the extremes of the full range (min, max, min+1, max-1, 0)
-//   max     — maximum sizes, values at the full range's max (and min): catches overflow
+//   max     — maximum independent sizes, values mostly at the full range's limits: catches overflow
+//             (sizes that depend on others, e.g. k: 1..min(n,m), and string contents stay random,
+//             so results don't collapse to one uniform case)
 //   pattern — all-equal / sorted / reversed / alternating arrays, path/star trees, uniform strings
 export const PROFILES = ['random', 'edge', 'max', 'pattern']
 export const profileFor = (test, profiles = PROFILES) => profiles[(test - 1) % profiles.length]
@@ -334,6 +366,13 @@ function evalExpr(e, env, line) {
       return Math.trunc(a / b)
     case '^': return a ** b
   }
+}
+
+// Does an expression (or range) reference any variable?
+function usesVars(e) {
+  if (!e || typeof e !== 'object') return false
+  if (e.ref) return true
+  return [e.a, e.b, e.lo, e.hi, ...(e.args ?? [])].some(usesVars)
 }
 
 class Gen {
@@ -372,7 +411,10 @@ class Gen {
   }
   // One value from [lo, hi], biased by profile.
   pick(lo, hi) {
-    if (this.profile === 'max') return this.rnd() < 0.75 ? hi : lo
+    if (this.profile === 'max') {
+      const r = this.rnd()
+      return r < 0.6 ? hi : r < 0.75 ? lo : this.int(lo, hi) // mostly the limit, some spread
+    }
     if (this.profile === 'edge') {
       const c = [lo, hi, lo + 1, hi - 1, 0].filter((x) => x >= lo && x <= hi)
       return c[this.int(0, c.length - 1)]
@@ -380,9 +422,10 @@ class Gen {
     return this.int(lo, hi)
   }
   // Size-like int (no `full`, non-negative): depends on the profile.
-  sizeValue(lo, hi) {
+  // `dependent`: its bounds use other variables (e.g. k: 1..min(n,m)) → random in Max.
+  sizeValue(lo, hi, dependent) {
     if (this.profile === 'edge') return lo
-    if (this.profile === 'max') return hi
+    if (this.profile === 'max') return dependent ? this.int(lo, hi) : hi
     if (this.profile === 'pattern') return this.int(lo, hi)
     return this.int(lo, lo + Math.round((hi - lo) * this.scale)) // random: grows over the run
   }
@@ -426,7 +469,7 @@ class Gen {
       case 'int': {
         const [lo, hi] = this.vrange(d.range, env, line)
         // Without `full`, a non-negative int is treated as a size/count.
-        return !d.range.full && lo >= 0 ? this.sizeValue(lo, hi) : this.pick(lo, hi)
+        return !d.range.full && lo >= 0 ? this.sizeValue(lo, hi, usesVars(d.range)) : this.pick(lo, hi)
       }
       case 'array':
       case 'sorted': {
@@ -459,7 +502,6 @@ class Gen {
         const { chars } = d
         const last = chars.length - 1
         if (p === 'edge') return chars[this.int(0, last)].repeat(n)
-        if (p === 'max') return chars[last].repeat(n)
         if (p === 'pattern') return Array.from({ length: n }, (_, i) => chars[i % 2 ? last : 0]).join('')
         return Array.from({ length: n }, () => chars[this.int(0, last)]).join('')
       }
@@ -468,8 +510,7 @@ class Gen {
         const c = this.count(d.cols, env, line, 'grid columns')
         const { chars } = d
         const last = chars.length - 1
-        const cell = (i, j) =>
-          p === 'edge' ? chars[0] : p === 'max' ? chars[last] : p === 'pattern' ? chars[(i + j) % 2 ? last : 0] : chars[this.int(0, last)]
+        const cell = (i, j) => (p === 'edge' ? chars[0] : p === 'pattern' ? chars[(i + j) % 2 ? last : 0] : chars[this.int(0, last)])
         return Array.from({ length: r }, (_, i) => Array.from({ length: c }, (_, j) => cell(i, j)).join(''))
       }
       case 'tree': {

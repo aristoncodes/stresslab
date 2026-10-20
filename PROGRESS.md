@@ -2,7 +2,7 @@
 
 > Claude Code: update this file at the end of every phase. Tick boxes, update the percentage, and add a line to the log.
 
-**Overall: 95% (56 / 59 tasks)**
+**Overall: 95% (58 / 61 tasks)**
 
 ```
 [███████████████████░] 95%
@@ -19,7 +19,7 @@
 | 6 | AI spec + Settings | 6 | 6 | ✅ Done |
 | 7 | Package & submit | 5 | 4 | 🟨 In progress |
 | 8 | Extras (P2) | 2 | 0 | ⬜ Not started |
-| 9 | Feedback round | 7 | 7 | ✅ Done |
+| 9 | Feedback round | 9 | 9 | ✅ Done |
 
 Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 
@@ -99,6 +99,8 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 - [x] Four generators cycled per test: Random, Edge cases, Max values, Patterns (toggle in Run options)
 - [x] `full A..B` real bounds for values + `min()`/`max()` in expressions; AI adds them
 - [x] Sample check also verifies size minimums and full ranges (AI retried on violation)
+- [x] Max generator less uniform (dependent sizes and strings random): user's int-overflow bug now caught 5/5 seeds (was 1000/1000 passing)
+- [x] AI lists "# limit name: MIN..MAX" for every constraint first; app cross-checks the spec against its own limits
 
 ## Phase 8 — Extras (P2, only if time remains)
 - [ ] Complexity: AI Big-O estimate of the solution (`complexity:estimate`)
@@ -121,3 +123,4 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 | 2026-10-20 22:59 | 6–7 | live AI test: Groq gpt-oss-120b 4/4 valid specs in 0.6–2.2 s; Gemini 4/4 but gemini-flash-latest overloaded (503/timeouts) → added auto-fallback to gemini-flash-lite-latest after 30 s or 429/5xx; Groq default changed from retired llama-3.3-70b-versatile; dmg rebuilt |
 | 2026-10-20 23:17 | 9 | sample box + pre-run sample check; matchSample (infers unprinted sizes, checks re-printed values agree); AI retries on sample mismatch and copied values; Groq default; test-case locator for `repeat t` inputs. Groq: 7/7 problems valid (graph fixed by one sample-driven retry); e2e: case 3 of 4 located |
 | 2026-10-21 00:08 | 9 | generators: random/edge/max/pattern + `full` ranges + min()/max(); overflow demo passes 200 random tests but fails on test 3 with Max values; mountains spec: 0 violations over ~16k cases in all 4 generators; AI now writes k: int 1..min(n,m) with full 0..1e9 (first attempt rejected by new size-minimum check) |
+| 2026-10-21 00:15 | 9 | user report: buggy mountains solution (int diff overflow) passed 1000 tests. Cause: Max made strings uniform and k = n = m, so g was a power of 2 and the wrapped diff gave the same answer. Fix: Max keeps dependent sizes/strings random, values 60% limit / 15% min / 25% spread → caught on tests 3-59 for 5/5 seeds. AI now lists # limit lines first; spec cross-checked against them (Groq: 3/3 first attempt) |
