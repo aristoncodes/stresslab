@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { DiffEditor } from '@monaco-editor/react'
-import { verdictText, verdictClass } from '../../../shared/verdict.js'
+import { verdictText, verdictClass, PROFILE_LABELS } from '../../../shared/verdict.js'
 import { langInfo } from '../lib/defaults'
 import { useDarkMode, monacoTheme } from '../lib/useDarkMode'
 import { cleanError } from '../lib/errors'
@@ -49,7 +49,8 @@ export default function FailureView({ runId }) {
 function meta(r) {
   const parts = []
   if (r.onSample) parts.push('Sample test from the problem statement (checked before random tests)')
-  else if (r.test) parts.push(`Random test #${r.test}`)
+  else if (r.test) parts.push(`Test #${r.test}`)
+  if (r.profile) parts.push(`Generator: ${PROFILE_LABELS[r.profile]}`)
   if (r.seed !== undefined) parts.push(`Seed: ${r.seed}`)
   parts.push(`${langInfo(r.sol).label} vs ${langInfo(r.brute).label}`)
   if (r.solMs !== undefined) parts.push(`Sol ${r.solMs} ms`, `Brute ${r.bruteMs} ms`)

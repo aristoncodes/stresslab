@@ -1,5 +1,13 @@
 import Box from './Box'
 import { LANGS } from '../lib/defaults'
+import { PROFILE_LABELS } from '../../../shared/verdict.js'
+
+const PROFILE_HINTS = {
+  random: 'small random tests that grow',
+  edge: 'min sizes, extreme values (min, max, ±1, 0)',
+  max: 'max sizes, values at the real limits (overflow)',
+  pattern: 'equal / sorted / reversed arrays, path & star trees'
+}
 
 function ToolchainBox({ toolchains, onRefresh }) {
   return (
@@ -77,6 +85,21 @@ function RunOptionsBox({ state, set, running, canRun, blockReason, onRun, onStop
           </tr>
         </tbody>
       </table>
+      {state.mode === 'spec' && (
+        <div className="generators">
+          <div className="small">Generators (cycled per test)</div>
+          {Object.entries(PROFILE_LABELS).map(([id, label]) => (
+            <label key={id} className="small" title={PROFILE_HINTS[id]}>
+              <input
+                type="checkbox"
+                checked={state.profiles.includes(id)}
+                onChange={(e) => set({ profiles: e.target.checked ? [...state.profiles, id] : state.profiles.filter((p) => p !== id) })}
+              />{' '}
+              {label}
+            </label>
+          ))}
+        </div>
+      )}
       <div className="small muted">Timeout is scaled ×3 for Python, ×4 for Java.</div>
       <button className="primary wide" disabled={!canRun} onClick={onRun} title={blockReason}>
         Run ⌘R

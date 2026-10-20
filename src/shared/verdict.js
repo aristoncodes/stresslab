@@ -46,5 +46,8 @@ export function verdictClass(verdict) {
   )
 }
 
+// Display names of the test generators (generator.js PROFILES).
+export const PROFILE_LABELS = { random: 'Random', edge: 'Edge cases', max: 'Max values', pattern: 'Patterns' }
+
 // Verdicts that have something to show in the failure window.
 export const hasDetails = (verdict) => !['AC', 'STOPPED', 'RUNNING'].includes(verdict)

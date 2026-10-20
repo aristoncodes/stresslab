@@ -36,6 +36,7 @@ export const DEFAULT_STATE = {
   sampleIn: sampleTestIn, // the problem statement's sample test (optional)
   sampleOut: sampleTestOut,
   mode: 'spec', // 'spec' | 'custom'
+  profiles: ['random', 'edge', 'max', 'pattern'], // generators cycled in spec mode
   sol: { lang: 'cpp', code: sampleSol },
   brute: { lang: 'python', code: sampleBrute },
   gen: { lang: 'python', code: GEN_TEMPLATES.python },

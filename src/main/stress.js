@@ -3,7 +3,7 @@
 import { app, Notification } from 'electron'
 import { randomInt } from 'crypto'
 import { runStress, createController, compareOutputs } from './runner.js'
-import { parseSpec, generateInput, generateTest, SpecError } from './generator.js'
+import { parseSpec, generateInput, generateTest, profileFor, SpecError } from './generator.js'
 import { getToolchains } from './toolchains.js'
 import { includeDir } from './paths.js'
 import { getSettings } from './settings.js'
@@ -22,7 +22,8 @@ function setDockProgress(fraction) {
 }
 
 /**
- * cfg: { sol, brute, mode: 'spec'|'custom', spec, gen, sample, tests, timeoutSec, compareMode, eps, seed }
+ * cfg: { sol, brute, mode: 'spec'|'custom', spec, gen, sample, profiles, tests, timeoutSec, compareMode, eps, seed }
+ * profiles: generators to cycle through in spec mode (see PROFILES in generator.js).
  * Returns { runId, seed } immediately; progress/result arrive as events on `sender`.
  */
 export async function startRun(cfg, sender) {
@@ -37,7 +38,7 @@ export async function startRun(cfg, sender) {
       if (e instanceof SpecError) throw new Error(`Spec ${e.message}`)
       throw e
     }
-    makeInput = async (test, seed) => generateInput(ast, { seed, test, tests: cfg.tests })
+    makeInput = async (test, seed) => generateInput(ast, { seed, test, tests: cfg.tests, profile: profileFor(test, cfg.profiles) })
   }
 
   const runId = `${++counter}-${Date.now()}`
@@ -76,6 +77,7 @@ export async function startRun(cfg, sender) {
       active = null
       setDockProgress(-1)
       const full = { runId, runSeed: seed, sol: cfg.sol.lang, brute: cfg.brute.lang, ...result }
+      if (ast && full.test && !full.onSample && full.input !== undefined) full.profile = profileFor(full.test, cfg.profiles)
       if (full.verdict === 'WA' && ast && !full.onSample) full.caseInfo = locateCase(ast, full, cfg)
       results.set(runId, full)
       if (results.size > MAX_RESULTS) results.delete(results.keys().next().value)
@@ -92,7 +94,7 @@ export async function startRun(cfg, sender) {
  * (generation is deterministic) to get each case's line range.
  */
 function locateCase(ast, r, cfg) {
-  const { cases } = generateTest(ast, { seed: r.seed, test: r.test, tests: cfg.tests })
+  const { cases } = generateTest(ast, { seed: r.seed, test: r.test, tests: cfg.tests, profile: r.profile })
   const expected = r.bruteOut.trimEnd().split('\n')
   const got = r.solOut.trimEnd().split('\n')
   if (cases.length < 2 || expected.length !== cases.length) return null

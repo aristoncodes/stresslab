@@ -65,7 +65,9 @@ export default function MainView() {
         ? `${langInfo(missingLang).label} toolchain is missing`
         : state.mode === 'spec' && !specStatus?.ok
           ? 'Spec is invalid'
-          : null
+          : state.mode === 'spec' && !state.profiles.length
+            ? 'Tick at least one generator'
+            : null
   const canRun = !blockReason
 
   const run = useCallback(async () => {
@@ -81,6 +83,7 @@ export default function MainView() {
         spec: state.spec,
         gen: state.gen,
         sample: { input: state.sampleIn, output: state.sampleOut },
+        profiles: state.profiles,
         tests: state.tests,
         timeoutSec: state.timeoutSec,
         compareMode: state.compareMode,

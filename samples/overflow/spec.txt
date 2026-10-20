@@ -1,0 +1,4 @@
+n: int 1..8
+a: array[n] int 0..10 full 0..10^9
+print n
+print a

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 import { detectToolchains } from '../src/main/compilers.js'
 import { runStress, createController, compareOutputs, runProcess } from '../src/main/runner.js'
 import { javaClassName } from '../src/main/languages.js'
+import { parseSpec, generateInput, profileFor } from '../src/main/generator.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const sample = (f) => readFileSync(join(root, 'samples/maxsub', f), 'utf8')
@@ -109,14 +110,24 @@ check('solution wrong on sample → WA on sample', r.verdict === 'WA' && r.onSam
 r = await run({ sol: { lang: 'python', code: 'print(0)' }, brute, sample: { input: sampleIn, output: '' } })
 check('sample without output compares sol vs brute', r.verdict === 'WA' && r.onSample)
 
-// 6. Stop kills the running process quickly
+// 6. Generators: an int-overflow bug is invisible to random small tests, caught by Max values
+const ov = (f) => readFileSync(join(root, 'samples/overflow', f), 'utf8')
+const ovAst = parseSpec(ov('spec.txt'))
+const specInput = (profiles) => async (i, seed) => generateInput(ovAst, { seed, test: i, tests: 200, profile: profileFor(i, profiles) })
+const ovProgs = { sol: { lang: 'cpp', code: ov('sol_buggy.cpp') }, brute: { lang: 'python', code: ov('brute.py') } }
+r = await run({ ...ovProgs, makeInput: specInput(['random']) })
+check('overflow bug passes random-only tests', r.verdict === 'AC', `${r.verdict} ${r.test}`)
+r = await run({ ...ovProgs, makeInput: specInput(['random', 'edge', 'max', 'pattern']) })
+check('overflow bug caught by Max values generator', r.verdict === 'WA' && profileFor(r.test) === 'max', `${r.verdict} on test ${r.test} (${profileFor(r.test)}): ${r.message}`)
+
+// 7. Stop kills the running process quickly
 const controller = createController()
 setTimeout(() => controller.stop(), 300)
 t = performance.now()
 r = await run({ sol: { lang: 'python', code: 'while True: pass' }, brute, controller, baseTimeoutMs: 10000 })
 check('Stop → STOPPED promptly', r.verdict === 'STOPPED' && performance.now() - t < 3000, `${Math.round(performance.now() - t)} ms`)
 
-// 7. Output cap
+// 8. Output cap
 const big = await runProcess({ cmd: '/bin/sh', args: ['-c', 'yes'], timeoutMs: 5000 })
 check('output over 1 MB is killed', big.outputLimit && big.stdout.length <= 1024 * 1024)
 

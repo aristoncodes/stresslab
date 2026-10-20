@@ -1,5 +1,5 @@
 // Spec generator tests: `npm run gen-test`
-import { parseSpec, validateSpec, generateInput, generateTest, matchSample } from '../src/main/generator.js'
+import { parseSpec, validateSpec, generateInput, generateTest, matchSample, PROFILES, profileFor } from '../src/main/generator.js'
 import { EXAMPLES } from '../src/main/llm.js'
 import { readFileSync } from 'fs'
 
@@ -69,6 +69,7 @@ check('pairs l <= r', pairs.length === 5 && pairs.every(([l, r]) => 1 <= l && l 
 const multi = gen('t: int 3..3\nprint t\nrepeat t {\n  n: int 2..2\n  s: string[n] "xy"\n  print n\n  print s\n}')
 check('repeat block', multi.trim().split('\n').length === 7, JSON.stringify(multi))
 check('expressions', gen('n: int 4..4\nprint n*2+1 (n-1)^2 n/3 2e5 "YES"').trim() === '9 9 1 200000 YES')
+check('min/max in expressions', gen('n: int 3..3\nm: int 5..5\nk: int min(n,m)..min(n,m)\nprint k max(n,m,7)').trim() === '3 7')
 check('range uses variable', gen('n: int 5..5\nk: int n..n\nprint k').trim() === '5')
 
 let thrown = ''
@@ -97,12 +98,43 @@ check('inferred size must agree later', match('n: int 1..5\na: array[n] int 1..9
 check('grid rows not printed is reported', match('n: int 1..5\ng: grid[n][2] "ab"\nprint g', 'ab\nba').message.includes("isn't printed before"))
 check('unprinted string length inferred', match('len: int 1..8\ns: string[len] "a-z"\nprint s', 'abacaba\n').ok)
 check('unprinted array length inferred', match('n: int 1..8\na: array[n] int 1..9\nprint a', '3 1 4 1 5\n').ok)
+check('size minimum is checked', match('n: int 2..8\nprint n', '1\n').message.includes('below the spec\'s minimum 2'))
+check('size maximum may shrink', match('n: int 1..8\nprint n', '500\n').ok)
+check('dependent minimum is checked', match('n: int 1..8\nm: int n..8\nprint n m', '3 2\n').message.includes('m = 2'))
+check('full range is checked', match('x: int -10..10 full -100..100\nprint x', '101\n').message.includes('outside its full range'))
 check('grid sample matches', match('n: int 1..3\nm: int 1..3\ng: grid[n][m] ".#"\nprint n m\nprint g', '2 3\n.#.\n##.\n').ok)
 
 // --- Test-case line ranges for multi-test inputs ---
 const mt = generateTest(parseSpec('t: int 3..3\nprint t\nrepeat t {\n  n: int 2..2\n  a: array[n] int 1..9\n  print n\n  print a\n}'), { seed: 3 })
 check('cases recorded per repeat iteration', JSON.stringify(mt.cases) === JSON.stringify([{ start: 2, end: 3 }, { start: 4, end: 5 }, { start: 6, end: 7 }]), JSON.stringify(mt.cases))
 check('no cases without repeat', generateTest(parseSpec(ARR), { seed: 1 }).cases.length === 0)
+
+// --- Generator profiles (random / edge / max / pattern) ---
+const prof = (spec, profile, seed = 1) => generateTest(parseSpec(spec), { seed, test: 500, tests: 1000, profile }).input
+const FULL = 'n: int 1..8\na: array[n] int -10..10 full -10^9..10^9\nprint n\nprint a'
+check('`full` range parses', validateSpec(FULL).ok)
+check('random ignores full range', prof(FULL, 'random').trim().split('\n')[1].split(' ').every((x) => Math.abs(+x) <= 10))
+const maxOut = prof(FULL, 'max').trim().split('\n')
+check('max: largest size', maxOut[0] === '8', maxOut[0])
+check('max: values at the real limits', maxOut[1].split(' ').every((x) => x === '1000000000' || x === '-1000000000'), maxOut[1])
+const edgeOut = prof(FULL, 'edge').trim().split('\n')
+check('edge: smallest size', edgeOut[0] === '1')
+const edgeVals = new Set(Array.from({ length: 40 }, (_, sd) => prof(FULL, 'edge', sd).trim().split('\n')[1]))
+check('edge: values are extremes or 0', [...edgeVals].every((v) => ['-1000000000', '1000000000', '-999999999', '999999999', '0'].includes(v)), [...edgeVals].join(','))
+const pat = Array.from({ length: 30 }, (_, sd) => prof('n: int 8..8\na: array[n] int 1..9\nprint a', 'pattern', sd).trim().split(' ').map(Number))
+check('pattern: equal / sorted / reversed / alternating', pat.every((a) => a.every((x) => x === a[0]) || a.every((x, i) => !i || a[i - 1] <= x) || a.every((x, i) => !i || a[i - 1] >= x) || a.every((x, i) => x === (i % 2 ? 1 : 9))))
+const pathTree = prof('n: int 6..6\ne: tree n\nprint e', 'max').trim().split('\n').map((l) => l.split(' ').map(Number))
+const deg = {}
+pathTree.flat().forEach((v) => (deg[v] = (deg[v] || 0) + 1))
+check('max: tree is a path (all degrees <= 2)', Object.values(deg).every((d) => d <= 2) && connected(6, pathTree))
+check('edge: k = 1 when k is a size', prof('n: int 1..8\nk: int 1..n\nprint n k', 'edge').trim() === '1 1')
+check('max: k = n when k is a size', prof('n: int 1..8\nk: int 1..n\nprint n k', 'max').trim() === '8 8')
+check('edge: pairs have l == r', prof('q: pairs[4] 1..9\nprint q', 'edge').trim().split('\n').every((l) => l.split(' ')[0] === l.split(' ')[1]))
+check('max: string uses the last character', prof('s: string[5] "a-c"\nprint s', 'max').trim() === 'ccccc')
+check('weighted full range used by max', prof('n: int 3..3\ne: tree n weighted 1..10 full 1..10^9\nprint e', 'max').includes('1000000000'))
+check('profiles cycle by test number', [1, 2, 3, 4, 5].map((t) => profileFor(t)).join() === 'random,edge,max,pattern,random')
+check('profile subset cycles', [1, 2, 3].map((t) => profileFor(t, ['random', 'max'])).join() === 'random,max,random')
+check('all profiles generate valid multi-test input', PROFILES.every((pr) => matchSample(parseSpec(MT), prof(MT, pr)).ok))
 
 // The LLM few-shot examples and the demo spec must themselves be valid.
 EXAMPLES.forEach((ex, i) => check(`LLM example ${i + 1} is valid`, validateSpec(ex.spec).ok, validateSpec(ex.spec).message))

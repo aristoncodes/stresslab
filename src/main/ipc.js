@@ -4,7 +4,7 @@ import { ipcMain, dialog, clipboard, shell, BrowserWindow } from 'electron'
 import { readFileSync, writeFileSync, statSync } from 'fs'
 import { basename, extname } from 'path'
 import { getToolchains } from './toolchains.js'
-import { validateSpec, parseSpec, matchSample } from './generator.js'
+import { validateSpec, parseSpec, matchSample, PROFILES } from './generator.js'
 import { startRun, stopRun, getResult } from './stress.js'
 import { getPublicSettings, saveSettings, getSettings, getApiKey, PROVIDERS } from './settings.js'
 import { specFromText, testConnection } from './llm.js'
@@ -58,6 +58,7 @@ export function registerIpc() {
         mode: custom ? 'custom' : 'spec',
         spec: custom ? '' : isStr(cfg.spec) ? cfg.spec : '',
         gen: custom ? checkProgram(cfg.gen, 'generator') : undefined,
+        profiles: profilesFrom(cfg.profiles),
         sample: isStr(cfg.sample?.input) && cfg.sample.input.trim() ? { input: cfg.sample.input, output: isStr(cfg.sample.output) ? cfg.sample.output : '' } : null,
         tests: Math.round(clamp(cfg.tests, 1, 100000, 1000)),
         timeoutSec: clamp(cfg.timeoutSec, 0.1, 60, 2),
@@ -113,6 +114,12 @@ export function registerIpc() {
     testConnection(llmConfig({ provider: o.provider, model: isStr(o.model, 200) ? o.model : '', apiKey: isStr(o.apiKey, 500) ? o.apiKey : '' }))
   )
   ipcMain.handle('window:settings', () => openSettingsWindow())
+}
+
+// Known generator names in canonical order; empty or invalid → random only.
+function profilesFrom(list) {
+  const chosen = PROFILES.filter((p) => Array.isArray(list) && list.includes(p))
+  return chosen.length ? chosen : ['random']
 }
 
 function sanitizeSettings(p) {

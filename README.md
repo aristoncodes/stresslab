@@ -17,6 +17,7 @@ Built with Electron for the *Application Development — Desktop Application* co
 - Ships a `bits/stdc++.h` shim so CP-style C++ compiles with Apple Clang.
 - **Spec language** → random generator with a seeded RNG, line-numbered errors and **small-first growth** (first failing test is usually tiny).
 - **AI spec**: paste the problem's *Input* section → Groq (default) / Gemini / Ollama writes the spec → the app parses it, checks it against the problem's **sample input**, and retries with the error (max 2 retries). Gemini automatically falls back to `gemini-flash-lite-latest` when `gemini-flash-latest` is overloaded.
+- **Four test generators**, cycled per test: *Random* (small, growing), *Edge cases* (minimum sizes, values at min/max/±1/0), *Max values* (maximum sizes, values at the problem's real limits → catches `int` overflow) and *Patterns* (all-equal/sorted/reversed/alternating arrays, path/star trees, uniform strings). Toggle them in Run options.
 - **Sample test**: paste the statement's sample input/output. Every run checks it first (the brute must print the sample output, then your solution must match it), and the spec box shows live whether the spec matches the sample's format.
 - **Exact failing case**: the failure window names the random test (#37, seed) and, for multi-test inputs, the failing **test case inside it** ("test case 3 of 5, input lines 6–7"), shown as a standalone `t = 1` input you can copy.
 - Custom generator mode: your own generator program in any of the 3 languages (seed in `argv[1]`).
@@ -63,14 +64,16 @@ npm run build:mac    # → dist/StressLab-1.0.0-arm64.dmg
 3. Fix the bug (`samples/maxsub/sol_fixed.cpp`) → *Accepted (1000 tests)*.
 4. Switch the solution language to Java and open `samples/maxsub/Solution.java` → *Accepted*.
 5. Settings (⌘,) → add a free Groq key (or Gemini) → **Generate spec with AI** from the problem text; the result is checked against the sample input.
-6. Multi-test demo: `samples/multitest/` (spec, sample, buggy C++, Python brute) → the failure window points at the failing test case.
+6. Overflow demo: `samples/overflow/` — the `int` sum passes every *Random* test; with *Max values* enabled it fails on test 3 (`8000000000` vs `-589934592`).
+7. Multi-test demo: `samples/multitest/` (spec, sample, buggy C++, Python brute) → the failure window points at the failing test case.
 
 ## Spec language
 
 One statement per line, `#` comments. Declarations don't print; `print` lines do.
 
 ```
-x: int L..R                        integer (bounds may use earlier ints: 1..n-1, 2*n, 10^9)
+x: int L..R                        integer (bounds may use earlier ints: 1..n-1, 2*n, 10^9, min(n,m))
+... L..R full A..B                  any value range: A..B are the problem's real bounds (Edge/Max tests)
 a: array[n] int L..R               n integers            (also distinct[n], sorted[n])
 p: perm[n]                         permutation of 1..n
 s: string[n] "a-z"                 n chars from a set (ranges allowed)
@@ -95,7 +98,9 @@ repeat t {
 }
 ```
 
-**Sample check:** values are read in `print` order and the structure is verified (counts, `repeat t`, string lengths and character sets, sorted/distinct/perm, edges); value ranges are not checked because specs shrink them on purpose. Sizes that the input never prints (e.g. `|s|`) are inferred from the sample.
+**Generators:** Random uses `L..R` and grows sizes over the run. Edge uses minimum sizes and values from `full A..B` (A, B, A+1, B−1, 0). Max uses maximum sizes and values at the `full` limits. Patterns reshapes data (equal/sorted/reversed/alternating, path/star trees). Non-negative ints without `full` are treated as sizes.
+
+**Sample check:** values are read in `print` order and the structure is verified (counts, `repeat t`, string lengths and character sets, sorted/distinct/perm, edges); value ranges are not checked because specs shrink them on purpose. Sizes that the input never prints (e.g. `|s|`) are inferred from the sample. A size's **minimum** must not exceed the sample (shrink only the maximum), and values must fit their `full` range.
 
 **Small-first growth:** non-negative `int` declarations (sizes/counts) start at their minimum on test 1 and reach the maximum after ~¼ of the run (10–100 tests). Value ranges with negatives are not scaled.
 

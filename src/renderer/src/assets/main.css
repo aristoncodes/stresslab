@@ -280,7 +280,7 @@ table.form tr.divider td {
   border-bottom: 1px solid var(--border-light);
   padding: 4px 0;
 }
-.sidebar input:not([type='radio']),
+.sidebar input:not([type='radio']):not([type='checkbox']),
 .sidebar select {
   width: 100px;
 }
@@ -407,4 +407,17 @@ pre.io {
 }
 .case-info pre.io {
   margin-top: 4px;
+}
+
+/* ---- Generator checkboxes (sidebar) ---- */
+.generators {
+  margin: 6px 0 4px;
+}
+.generators label {
+  display: block;
+  padding: 1px 0;
+}
+.generators input[type='checkbox'] {
+  vertical-align: middle;
+  margin: 0 2px 0 0;
 }

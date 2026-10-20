@@ -1,4 +1,4 @@
 n: int 1..8
-a: array[n] int -10..10
+a: array[n] int -10..10 full -10^9..10^9
 print n
 print a

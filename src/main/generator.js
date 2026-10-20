@@ -12,9 +12,11 @@
 //   e: tree n [weighted L..R]         n-1 edges "u v [w]"
 //   e: graph n m [connected] [weighted L..R]   m edges of a simple graph
 //   q: pairs[k] L..R                  k lines "l r" with L <= l <= r <= R
+//   Any value range may add the problem's real bounds: `int -10..10 full -10^9..10^9`.
+//   Random tests use L..R; the Edge and Max generators use the full range.
 //   repeat t { ... }                  repeat the block t times (fresh variables each time)
 //   print item item ...               items on one line, space separated (multi-line items keep their lines)
-// Expressions: integers (also 2e5, 10^9), int variables, + - * / ^ and parentheses.
+// Expressions: integers (also 2e5, 10^9), int variables, + - * / ^, parentheses, min(a, b), max(a, b).
 
 export class SpecError extends Error {
   constructor(line, message) {
@@ -37,7 +39,7 @@ export function mulberry32(seed) {
 
 // ---------- Tokenizer ----------
 
-const TOKEN = /\s*(?:(\d+(?:e\d+)?)|([A-Za-z_]\w*)|("(?:[^"\\]|\\.)*")|(\.\.|[:[\]{}()+\-*/^]))/y
+const TOKEN = /\s*(?:(\d+(?:e\d+)?)|([A-Za-z_]\w*)|("(?:[^"\\]|\\.)*")|(\.\.|[:[\]{}()+\-*/^,]))/y
 
 function tokenize(text, line) {
   const tokens = []
@@ -111,6 +113,13 @@ class LineParser {
       this.expect(')')
       return e
     }
+    if (tok.type === 'id' && (tok.value === 'min' || tok.value === 'max') && this.peek('(')) {
+      this.next()
+      const args = [this.expr()]
+      while (this.peek(',')) this.next(), args.push(this.expr())
+      this.expect(')')
+      return { fn: tok.value, args }
+    }
     if (tok.type === 'id') {
       const kind = this.scope.get(tok.value)
       if (!kind) this.fail(`unknown variable "${tok.value}"`)
@@ -123,6 +132,15 @@ class LineParser {
     const lo = this.expr()
     this.expect('..', '"L..R" range')
     return { lo, hi: this.expr() }
+  }
+  // L..R with optional `full A..B` (the problem's real bounds, used by Edge/Max tests).
+  valueRange() {
+    const r = this.range()
+    if (this.peek('full')) {
+      this.next()
+      r.full = this.range()
+    }
+    return r
   }
   bracket() {
     this.expect('[')
@@ -141,7 +159,7 @@ class LineParser {
   weighted() {
     if (!this.peek('weighted')) return null
     this.next()
-    return this.range()
+    return this.valueRange()
   }
 
   declaration(name) {
@@ -152,14 +170,14 @@ class LineParser {
     const d = { kind: type.value, name }
     switch (type.value) {
       case 'int':
-        d.range = this.range()
+        d.range = this.valueRange()
         break
       case 'array':
       case 'distinct':
       case 'sorted':
         d.len = this.bracket()
         if (this.peek('int')) this.next()
-        d.range = this.range()
+        d.range = this.valueRange()
         break
       case 'perm':
         d.len = this.bracket()
@@ -185,7 +203,7 @@ class LineParser {
         break
       case 'pairs':
         d.len = this.bracket()
-        d.range = this.range()
+        d.range = this.valueRange()
         break
     }
     this.done()
@@ -288,9 +306,18 @@ export function sizeScale(test, tests) {
   return Math.min(1, (test - 1) / ramp)
 }
 
+// Test generators ("profiles"). A run cycles through the enabled ones by test number.
+//   random  — small random tests that grow (small-first)
+//   edge    — minimum sizes, values at the extremes of the full range (min, max, min+1, max-1, 0)
+//   max     — maximum sizes, values at the full range's max (and min): catches overflow
+//   pattern — all-equal / sorted / reversed / alternating arrays, path/star trees, uniform strings
+export const PROFILES = ['random', 'edge', 'max', 'pattern']
+export const profileFor = (test, profiles = PROFILES) => profiles[(test - 1) % profiles.length]
+
 // `env` maps int variable names to values. Throws SpecError for unknown values.
 function evalExpr(e, env, line) {
   if (e.num !== undefined) return e.num
+  if (e.fn) return Math[e.fn](...e.args.map((a) => evalExpr(a, env, line)))
   if (e.ref) {
     if (env[e.ref] === undefined) throw new SpecError(line, `"${e.ref}" has no value yet`)
     return env[e.ref]
@@ -310,9 +337,10 @@ function evalExpr(e, env, line) {
 }
 
 class Gen {
-  constructor(seed, scale) {
+  constructor(seed, scale, profile = 'random') {
     this.rnd = mulberry32(seed)
     this.scale = scale
+    this.profile = profile
     this.out = []
     this.size = 0
     this.lines = 0 // output lines so far
@@ -337,6 +365,36 @@ class Gen {
     if (lo > hi) throw new SpecError(line, `empty range ${lo}..${hi}`)
     return [lo, hi]
   }
+  // Value range for this profile: Edge/Max use the problem's full bounds when given.
+  vrange(r, env, line) {
+    const useFull = r.full && (this.profile === 'edge' || this.profile === 'max')
+    return this.range(useFull ? r.full : r, env, line)
+  }
+  // One value from [lo, hi], biased by profile.
+  pick(lo, hi) {
+    if (this.profile === 'max') return this.rnd() < 0.75 ? hi : lo
+    if (this.profile === 'edge') {
+      const c = [lo, hi, lo + 1, hi - 1, 0].filter((x) => x >= lo && x <= hi)
+      return c[this.int(0, c.length - 1)]
+    }
+    return this.int(lo, hi)
+  }
+  // Size-like int (no `full`, non-negative): depends on the profile.
+  sizeValue(lo, hi) {
+    if (this.profile === 'edge') return lo
+    if (this.profile === 'max') return hi
+    if (this.profile === 'pattern') return this.int(lo, hi)
+    return this.int(lo, lo + Math.round((hi - lo) * this.scale)) // random: grows over the run
+  }
+  // Rearrange an array for the Pattern profile.
+  shape(a, lo, hi) {
+    switch (this.int(0, 3)) {
+      case 0: return a.fill(a.length ? a[0] : 0) // all equal
+      case 1: return a.sort((x, y) => x - y)
+      case 2: return a.sort((x, y) => y - x)
+      default: return a.map((_, i) => (i % 2 ? lo : hi)) // alternating extremes
+    }
+  }
   count(e, env, line, what) {
     const n = this.eval(e, env, line)
     if (n < 0) throw new SpecError(line, `${what} is negative (${n})`)
@@ -345,54 +403,81 @@ class Gen {
   }
   edges(n, pairs, weight, env, line) {
     const label = this.shuffle(Array.from({ length: n }, (_, i) => i + 1))
-    const w = weight ? this.range(weight, env, line) : null
+    const w = weight ? this.vrange(weight, env, line) : null
     return this.shuffle(pairs).map(([u, v]) => {
       if (this.rnd() < 0.5) [u, v] = [v, u]
-      return [label[u], label[v], ...(w ? [this.int(w[0], w[1])] : [])].join(' ')
+      return [label[u], label[v], ...(w ? [this.pick(w[0], w[1])] : [])].join(' ')
     })
+  }
+  // Tree parent for node v (nodes 0..n-1): path for Edge/Max, path or star for Pattern.
+  treeShape() {
+    if (this.profile === 'edge' || this.profile === 'max') return 'path'
+    if (this.profile === 'pattern') return this.rnd() < 0.5 ? 'path' : 'star'
+    return 'random'
+  }
+  parent(v, shape) {
+    return shape === 'path' ? v - 1 : shape === 'star' ? 0 : this.int(0, v - 1)
   }
 
   value(d, env) {
     const { line } = d
+    const p = this.profile
     switch (d.kind) {
       case 'int': {
-        let [lo, hi] = this.range(d.range, env, line)
-        if (lo >= 0) hi = lo + Math.round((hi - lo) * this.scale) // sizes/counts grow over time
-        return this.int(lo, hi)
+        const [lo, hi] = this.vrange(d.range, env, line)
+        // Without `full`, a non-negative int is treated as a size/count.
+        return !d.range.full && lo >= 0 ? this.sizeValue(lo, hi) : this.pick(lo, hi)
       }
       case 'array':
       case 'sorted': {
         const n = this.count(d.len, env, line, 'array length')
-        const [lo, hi] = this.range(d.range, env, line)
-        const a = Array.from({ length: n }, () => this.int(lo, hi))
+        const [lo, hi] = this.vrange(d.range, env, line)
+        let a = Array.from({ length: n }, () => this.pick(lo, hi))
+        if (p === 'pattern') a = this.shape(a, lo, hi)
         return d.kind === 'sorted' ? a.sort((x, y) => x - y) : a
       }
       case 'distinct': {
         const n = this.count(d.len, env, line, 'array length')
-        const [lo, hi] = this.range(d.range, env, line)
+        const [lo, hi] = this.vrange(d.range, env, line)
         if (hi - lo + 1 < n) throw new SpecError(line, `can't pick ${n} distinct values from ${lo}..${hi}`)
+        if (p === 'max') return Array.from({ length: n }, (_, i) => hi - i) // largest values
+        if (p === 'edge') return Array.from({ length: n }, (_, i) => (i % 2 ? hi - (i >> 1) : lo + (i >> 1))) // both ends
         const seen = new Set()
         while (seen.size < n) seen.add(this.int(lo, hi))
-        return this.shuffle([...seen])
+        const a = [...seen]
+        return p === 'pattern' ? a.sort((x, y) => (this.rnd() < 0.5 ? x - y : y - x)) : this.shuffle(a)
       }
-      case 'perm':
-        return this.shuffle(Array.from({ length: this.count(d.len, env, line, 'perm length') }, (_, i) => i + 1))
+      case 'perm': {
+        const a = Array.from({ length: this.count(d.len, env, line, 'perm length') }, (_, i) => i + 1)
+        if (p === 'edge') return a // identity
+        if (p === 'max') return a.reverse()
+        if (p === 'pattern') return this.rnd() < 0.5 ? a : a.reverse()
+        return this.shuffle(a)
+      }
       case 'string': {
         const n = this.count(d.len, env, line, 'string length')
-        return Array.from({ length: n }, () => d.chars[this.int(0, d.chars.length - 1)]).join('')
+        const { chars } = d
+        const last = chars.length - 1
+        if (p === 'edge') return chars[this.int(0, last)].repeat(n)
+        if (p === 'max') return chars[last].repeat(n)
+        if (p === 'pattern') return Array.from({ length: n }, (_, i) => chars[i % 2 ? last : 0]).join('')
+        return Array.from({ length: n }, () => chars[this.int(0, last)]).join('')
       }
       case 'grid': {
         const r = this.count(d.rows, env, line, 'grid rows')
         const c = this.count(d.cols, env, line, 'grid columns')
-        return Array.from({ length: r }, () =>
-          Array.from({ length: c }, () => d.chars[this.int(0, d.chars.length - 1)]).join('')
-        )
+        const { chars } = d
+        const last = chars.length - 1
+        const cell = (i, j) =>
+          p === 'edge' ? chars[0] : p === 'max' ? chars[last] : p === 'pattern' ? chars[(i + j) % 2 ? last : 0] : chars[this.int(0, last)]
+        return Array.from({ length: r }, (_, i) => Array.from({ length: c }, (_, j) => cell(i, j)).join(''))
       }
       case 'tree': {
         const n = this.count(d.n, env, line, 'tree size')
         if (n < 1) throw new SpecError(line, 'tree needs at least 1 node')
+        const shape = this.treeShape()
         const pairs = []
-        for (let v = 1; v < n; v++) pairs.push([this.int(0, v - 1), v])
+        for (let v = 1; v < n; v++) pairs.push([this.parent(v, shape), v])
         return this.edges(n, pairs, d.weight, env, line)
       }
       case 'graph': {
@@ -411,16 +496,18 @@ class Gen {
           pairs.push([u, v])
           return true
         }
-        if (d.connected) for (let v = 1; v < n; v++) add(this.int(0, v - 1), v)
+        const shape = this.treeShape()
+        if (d.connected) for (let v = 1; v < n; v++) add(this.parent(v, shape), v)
         while (pairs.length < m) add(this.int(0, n - 1), this.int(0, n - 1))
         return this.edges(n, pairs, d.weight, env, line)
       }
       case 'pairs': {
         const k = this.count(d.len, env, line, 'pair count')
-        const [lo, hi] = this.range(d.range, env, line)
+        const [lo, hi] = this.vrange(d.range, env, line)
         return Array.from({ length: k }, () => {
-          const a = this.int(lo, hi)
-          const b = this.int(lo, hi)
+          if (p === 'max') return `${lo} ${hi}` // widest range
+          const a = this.pick(lo, hi)
+          const b = p === 'edge' ? a : this.pick(lo, hi) // edge: l == r
           return `${Math.min(a, b)} ${Math.max(a, b)}`
         })
       }
@@ -457,11 +544,11 @@ class Gen {
   }
 }
 
-// Generate one test. `test` is 1-based; `tests` the planned total.
+// Generate one test. `test` is 1-based; `tests` the planned total; `profile` one of PROFILES.
 // Returns { input, cases }: cases are the 1-based input line ranges of each
 // top-level `repeat` iteration, used to point at the failing test case.
-export function generateTest(ast, { seed, test = 1, tests = 1 }) {
-  const g = new Gen(seed, sizeScale(test, tests))
+export function generateTest(ast, { seed, test = 1, tests = 1, profile = 'random' }) {
+  const g = new Gen(seed, sizeScale(test, tests), profile)
   g.run(ast, {})
   return { input: g.out.join(''), cases: g.cases }
 }
@@ -578,6 +665,30 @@ class Matcher {
     }
   }
 
+  // Specs may shrink a size's maximum but not its minimum, and values must fit
+  // their `full` (real) range. Bounds that can't be evaluated yet are skipped.
+  checkBounds(d, env) {
+    if (d?.kind !== 'int') return
+    const v = env[d.name]
+    const where = `sample line ${this.toks[this.pos - 1].line}`
+    const bound = (e) => {
+      try {
+        return evalExpr(e, env, d.line)
+      } catch {
+        return undefined
+      }
+    }
+    if (d.range.full) {
+      const [lo, hi] = [bound(d.range.full.lo), bound(d.range.full.hi)]
+      if ((lo !== undefined && v < lo) || (hi !== undefined && v > hi)) this.fail(`${where}: ${d.name} = ${v} is outside its full range ${lo}..${hi}`)
+      return
+    }
+    const lo = bound(d.range.lo)
+    if (lo !== undefined && lo >= 0 && v < lo) {
+      this.fail(`${where}: ${d.name} = ${v} is below the spec's minimum ${lo} (shrink the maximum of a size, never its minimum)`)
+    }
+  }
+
   run(stmts, env, decls) {
     for (const s of stmts) {
       if (s.kind === 'repeat') {
@@ -587,7 +698,10 @@ class Matcher {
         for (const it of s.items) {
           if (it.str !== undefined) it.str.split(/\s+/).filter(Boolean).forEach(() => this.take(`"${it.str}"`))
           else if (it.var) this.readVar(decls[it.var], env)
-          else if (it.expr.ref && env[it.expr.ref] === undefined) env[it.expr.ref] = this.int(it.expr.ref) // first print binds an int
+          else if (it.expr.ref && env[it.expr.ref] === undefined) {
+            env[it.expr.ref] = this.int(it.expr.ref) // first print binds an int
+            this.checkBounds(decls[it.expr.ref], env)
+          }
           else if (it.expr.ref) {
             // Printed again (or inferred earlier from a length): values must agree.
             const v = this.int(it.expr.ref)

@@ -61,6 +61,7 @@ Students practicing on Codeforces / CSES / LeetCode / AtCoder, on macOS.
 | F14 | Custom generator mode | User supplies generator code (any of the 3 languages); app runs it with the seed as argv[1]. |
 | F15 | Desktop extras | Native menu with shortcuts (⌘O open, ⌘R run, ⌘. stop, ⌘, settings); `Notification` on failure; dock badge / progress bar; `dialog` open/save; `clipboard`; `shell.openPath` for saved cases. |
 | F20 | Sample test | User pastes the statement's sample input/output. Checked before random tests (brute must reproduce the sample output; solution must match). AI specs are validated against the sample input's structure and retried on mismatch. |
+| F22 | Test generators | Spec mode cycles Random / Edge cases / Max values / Patterns per test. Value ranges may carry the real bounds (`full A..B`) for Edge/Max; `min()`/`max()` in expressions; sample check verifies size minimums and full ranges. |
 | F21 | Failing test case | Failure window names the random test (#, seed); for multi-test inputs it identifies the failing case inside the input and shows it as a standalone t = 1 input. |
 
 ### P2 — nice to have

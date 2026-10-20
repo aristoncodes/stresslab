@@ -21,15 +21,18 @@ SPEC LANGUAGE (one statement per line, # starts a comment):
   e: tree n [weighted L..R]          n-1 edges "u v [w]" of a random tree on 1..n
   e: graph n m [connected] [weighted L..R]   m edges of a simple undirected graph on 1..n
   q: pairs[k] L..R                   k lines "l r" with L <= l <= r <= R
+  ... L..R full A..B                 any VALUE range may add the problem's real bounds after "full"
   repeat t { ... }                   repeat the block t times; the closing } goes on its own line
   print item item ...                print items on one line separated by spaces
-Ranges and sizes may use integers, earlier int variables and + - * / ^ ( ), e.g. 1..n-1.
+Ranges and sizes may use integers, earlier int variables, + - * / ^ ( ) and min(a, b) / max(a, b), e.g. 1..n-1 or 1..min(n,m).
 A size inside [ ] is ONE value, never a range: for a random length declare an int first (n: int 1..8) and write string[n].
 Declarations print nothing; only print lines produce output. Print everything in the exact order and line layout of the Input section.
 
 RULES FOR STRESS TESTING:
-- Shrink ALL sizes: every count, length, n, m, q, t must be at most 8.
+- Shrink ALL sizes: every count, length, n, m, q, t must be at most 8. Shrink only the MAXIMUM: keep each size's real minimum (if 1 <= n, the spec must allow n = 1).
+- Keep sizes independent unless the statement links them; use min(a, b) / max(a, b) for linked bounds, e.g. for 1 <= k <= min(n, m): n: int 1..8, m: int 1..8, k: int 1..min(n,m).
 - Keep values small: within -10..10 (or 1..10 if values must be positive), unless the problem needs otherwise (e.g. values bounded by n, or characters limited to a set).
+- For every VALUE range (array elements, weights, standalone values; NOT sizes or counts), add "full A..B" with the real bounds from the statement, e.g. a: array[n] int -10..10 full -10^9..10^9 The app uses them for max-value and edge-case tests.
 - Keep every constraint that makes the input valid (distinctness, sortedness, connectivity, 1 <= l <= r <= n, etc.).
 - The sample input (if given) only shows the layout. Never copy its values; every value must come from a declaration.
 - Output ONLY the spec. No explanation, no markdown fences.`
@@ -40,7 +43,7 @@ export const EXAMPLES = [
 The second line contains n integers a_1..a_n (-10^9 <= a_i <= 10^9).`,
     spec: `n: int 1..8
 k: int 1..n
-a: array[n] int -10..10
+a: array[n] int -10..10 full -10^9..10^9
 print n k
 print a`
   },
@@ -59,7 +62,7 @@ repeat t {
   {
     input: `The first line contains n (2 <= n <= 2*10^5), the number of vertices. Each of the next n-1 lines contains u, v and w (1 <= w <= 10^9): an edge of the tree with weight w. The last line contains q queries... Then q lines follow, each with two vertices x y.`,
     spec: `n: int 2..8
-e: tree n weighted 1..10
+e: tree n weighted 1..10 full 1..10^9
 q: int 1..8
 x: pairs[q] 1..n
 print n
