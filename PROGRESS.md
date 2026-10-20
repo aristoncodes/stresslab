@@ -102,7 +102,7 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 | 2026-10-20 22:10 | 0 | electron-vite React/JS scaffold, sandboxed secure window, local Monaco (0.57 worker path), bits/stdc++.h shim + extraResources, private GitHub repo |
 | 2026-10-20 22:40 | 1 | languages/compilers/runner; C++ link probe flags broken Clang; `npm run smoke` 16/16 pass (buggy C++ WA on test 1 n=1, Java+py gen AC, CE/TLE/RE/BRUTE_FAIL/Stop/output cap) |
 | 2026-10-20 22:34 | 2 | contextBridge API (19 fns), 17 IPC channels with input checks, CF-style main UI; verified by driving the built app (click Run → WA on test 3, failure window opens) |
-| 2026-10-20 22:34 | 3 | generator.js: all F5 types, line-numbered errors, small-first scaling; `npm run gen-test` 35/35 (fixed `#` inside quoted char sets being treated as a comment) |
+| 2026-10-20 22:34 | 3 | generator.js: all F5 types, line-numbered errors, small-first scaling; `npm run gen-test` 34/34 (fixed `#` inside quoted char sets being treated as a comment) |
 | 2026-10-20 22:34 | 4 | failure window reused via hash routing; side-by-side Monaco diff (forced, no inline fallback); CE/RE/TLE views; copy/save/open/reveal |
 | 2026-10-20 22:34 | 5 | native menu ⌘O/⌘R/⌘./⌘, + Edit menu; open/save dialogs; Notification; dock badge + progress bar; clipboard; shell (openPath restricted to saved files) |
 | 2026-10-20 22:34 | 6 | settings window, safeStorage keys, llm.js (Gemini/Groq/Ollama) with validate + 2 retries; few-shot examples checked by gen-test; no-key error path verified, live AI call not tested (no key) |
