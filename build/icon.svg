@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect x="100" y="100" width="824" height="824" rx="180" fill="#3b5998"/>
+  <rect x="190" y="250" width="644" height="524" rx="24" fill="#ffffff"/>
+  <rect x="190" y="250" width="644" height="80" rx="24" fill="#f0f0f0"/>
+  <rect x="190" y="306" width="644" height="24" fill="#f0f0f0"/>
+  <text x="240" y="470" font-family="Menlo, monospace" font-size="96" font-weight="bold" fill="#008000">AC  ✓</text>
+  <text x="240" y="610" font-family="Menlo, monospace" font-size="96" font-weight="bold" fill="#008000">AC  ✓</text>
+  <text x="240" y="740" font-family="Menlo, monospace" font-size="96" font-weight="bold" fill="#cc0000">WA  ✗</text>
+</svg>

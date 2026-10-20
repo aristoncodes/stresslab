@@ -9,6 +9,13 @@ import { LANGUAGES, DEFAULT_CPP_FLAGS } from './languages.js'
 const MAX_OUTPUT = 1024 * 1024 // per stream; more than this is killed as "output limit"
 const COMPILE_TIMEOUT_MS = 60000
 
+// Apps launched from Finder get a minimal PATH; compilers need e.g. `ld` and `as`.
+const STD_PATH = ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin', '/usr/sbin', '/sbin']
+const CHILD_ENV = {
+  ...process.env,
+  PATH: [...new Set([...(process.env.PATH ?? '').split(':').filter(Boolean), ...STD_PATH])].join(':')
+}
+
 // A Stop handle shared by everything in one run: kills every live child process.
 export function createController() {
   return {
@@ -30,7 +37,7 @@ export function runProcess({ cmd, args = [], cwd, input = '', timeoutMs, control
     let outputLimit = false
     let spawnError = null
 
-    const child = spawn(cmd, args, { cwd, stdio: ['pipe', 'pipe', 'pipe'] })
+    const child = spawn(cmd, args, { cwd, env: CHILD_ENV, stdio: ['pipe', 'pipe', 'pipe'] })
     controller?.children.add(child)
 
     const collect = (stream) => (chunk) => {

@@ -2,22 +2,22 @@
 
 > Claude Code: update this file at the end of every phase. Tick boxes, update the percentage, and add a line to the log.
 
-**Overall: 25% (13 / 52 tasks)**
+**Overall: 92% (48 / 52 tasks)**
 
 ```
-[█████░░░░░░░░░░░░░░░] 25%
+[██████████████████░░] 92%
 ```
 
 | Phase | Name | Tasks | Done | Status |
 |---|---|---|---|---|
 | 0 | Setup | 5 | 5 | ✅ Done |
 | 1 | Run engine | 8 | 8 | ✅ Done |
-| 2 | IPC + main UI | 8 | 0 | ⬜ Not started |
-| 3 | Spec generator | 8 | 0 | ⬜ Not started |
-| 4 | Failure window | 4 | 0 | ⬜ Not started |
-| 5 | Desktop APIs | 6 | 0 | ⬜ Not started |
-| 6 | AI spec + Settings | 6 | 0 | ⬜ Not started |
-| 7 | Package & submit | 5 | 0 | ⬜ Not started |
+| 2 | IPC + main UI | 8 | 8 | ✅ Done |
+| 3 | Spec generator | 8 | 8 | ✅ Done |
+| 4 | Failure window | 4 | 4 | ✅ Done |
+| 5 | Desktop APIs | 6 | 6 | ✅ Done |
+| 6 | AI spec + Settings | 6 | 6 | ✅ Done |
+| 7 | Package & submit | 5 | 3 | 🟨 In progress |
 | 8 | Extras (P2) | 2 | 0 | ⬜ Not started |
 
 Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
@@ -42,53 +42,53 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 - [x] Stress loop with stop flag; verified from a Node script
 
 ## Phase 2 — IPC + main UI
-- [ ] `preload` contextBridge API (narrow, documented)
-- [ ] IPC handlers: `toolchains:get`, `stress:start`, `stress:stop`, events `stress:progress`, `stress:result`
-- [ ] Header bar + CF-style `Box` component + design tokens
-- [ ] Two `CodePane`s with language dropdowns
-- [ ] Sidebar: Toolchains box, Run options box, Run/Stop
-- [ ] Status table with colored verdicts
-- [ ] Live "Running on test N" + progress bar
-- [ ] Persist editors/options in localStorage (try/catch)
+- [x] `preload` contextBridge API (narrow, documented)
+- [x] IPC handlers: `toolchains:get`, `stress:start`, `stress:stop`, events `stress:progress`, `stress:result`
+- [x] Header bar + CF-style `Box` component + design tokens
+- [x] Two `CodePane`s with language dropdowns
+- [x] Sidebar: Toolchains box, Run options box, Run/Stop
+- [x] Status table with colored verdicts
+- [x] Live "Running on test N" + progress bar
+- [x] Persist editors/options in localStorage (try/catch)
 
 ## Phase 3 — Spec generator
-- [ ] Seeded RNG (mulberry32)
-- [ ] Tokenizer + parser with line-numbered errors
-- [ ] `int`, `array`, `distinct`, `sorted`, `perm`
-- [ ] `string`, `grid`
-- [ ] `tree`, `graph [connected]`, `weighted`
-- [ ] `pairs[q]`, `repeat t { }`, `print`
-- [ ] Small-first size scaling by test index
-- [ ] Spec box with live validation via `spec:validate`; custom generator mode
+- [x] Seeded RNG (mulberry32)
+- [x] Tokenizer + parser with line-numbered errors
+- [x] `int`, `array`, `distinct`, `sorted`, `perm`
+- [x] `string`, `grid`
+- [x] `tree`, `graph [connected]`, `weighted`
+- [x] `pairs[q]`, `repeat t { }`, `print`
+- [x] Small-first size scaling by test index
+- [x] Spec box with live validation via `spec:validate`; custom generator mode
 
 ## Phase 4 — Failure window
-- [ ] Second `BrowserWindow` + `failure:data` IPC
-- [ ] Input view, Monaco diff of outputs
-- [ ] RE/TLE view with stderr + exit code
-- [ ] Copy input / Save as .txt
+- [x] Second `BrowserWindow` + `failure:data` IPC
+- [x] Input view, Monaco diff of outputs
+- [x] RE/TLE view with stderr + exit code
+- [x] Copy input / Save as .txt
 
 ## Phase 5 — Desktop APIs
-- [ ] Native menu + shortcuts (⌘O, ⌘R, ⌘., ⌘,)
-- [ ] `dialog.showOpenDialog` into focused editor
-- [ ] `dialog.showSaveDialog` for failing input
-- [ ] `Notification` on failure / finish
-- [ ] Dock badge + `setProgressBar`
-- [ ] `clipboard` + `shell.openPath`
+- [x] Native menu + shortcuts (⌘O, ⌘R, ⌘., ⌘,)
+- [x] `dialog.showOpenDialog` into focused editor
+- [x] `dialog.showSaveDialog` for failing input
+- [x] `Notification` on failure / finish
+- [x] Dock badge + `setProgressBar`
+- [x] `clipboard` + `shell.openPath`
 
 ## Phase 6 — AI spec + Settings
-- [ ] Settings window (provider, model, key, defaults)
-- [ ] `safeStorage` encrypted key in `userData`
-- [ ] `llm.js`: Gemini, Groq (OpenAI-compatible), Ollama
-- [ ] Prompt with spec rules + few-shot examples
-- [ ] Validate → retry with parser error (max 2)
-- [ ] "Generate spec with AI" button wired, loading + error states
+- [x] Settings window (provider, model, key, defaults)
+- [x] `safeStorage` encrypted key in `userData`
+- [x] `llm.js`: Gemini, Groq (OpenAI-compatible), Ollama
+- [x] Prompt with spec rules + few-shot examples
+- [x] Validate → retry with parser error (max 2)
+- [x] "Generate spec with AI" button wired, loading + error states
 
 ## Phase 7 — Package & submit
-- [ ] electron-builder config (dmg, arm64 or universal, icon)
-- [ ] Build .dmg and test it on a clean launch
-- [ ] README: features, screenshots, setup, Gatekeeper bypass, architecture, IPC list
-- [ ] Final demo run (C++ bug found, Java run, AI spec)
-- [ ] Submit repo, AI chat link, .dmg on portal
+- [x] electron-builder config (dmg, arm64 or universal, icon)
+- [x] Build .dmg and test it on a clean launch
+- [x] README: features, screenshots, setup, Gatekeeper bypass, architecture, IPC list
+- [ ] Final demo run (C++ bug found, Java run, AI spec) — C++ + Java verified in packaged app; AI spec needs your Gemini key
+- [ ] Submit repo, AI chat link, .dmg on portal — your step (repo is private until you make it public)
 
 ## Phase 8 — Extras (P2, only if time remains)
 - [ ] Complexity: AI Big-O estimate of the solution (`complexity:estimate`)
@@ -101,3 +101,10 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 |---|---|---|
 | 2026-10-20 22:10 | 0 | electron-vite React/JS scaffold, sandboxed secure window, local Monaco (0.57 worker path), bits/stdc++.h shim + extraResources, private GitHub repo |
 | 2026-10-20 22:40 | 1 | languages/compilers/runner; C++ link probe flags broken Clang; `npm run smoke` 16/16 pass (buggy C++ WA on test 1 n=1, Java+py gen AC, CE/TLE/RE/BRUTE_FAIL/Stop/output cap) |
+| 2026-10-20 22:34 | 2 | contextBridge API (19 fns), 17 IPC channels with input checks, CF-style main UI; verified by driving the built app (click Run → WA on test 3, failure window opens) |
+| 2026-10-20 22:34 | 3 | generator.js: all F5 types, line-numbered errors, small-first scaling; `npm run gen-test` 35/35 (fixed `#` inside quoted char sets being treated as a comment) |
+| 2026-10-20 22:34 | 4 | failure window reused via hash routing; side-by-side Monaco diff (forced, no inline fallback); CE/RE/TLE views; copy/save/open/reveal |
+| 2026-10-20 22:34 | 5 | native menu ⌘O/⌘R/⌘./⌘, + Edit menu; open/save dialogs; Notification; dock badge + progress bar; clipboard; shell (openPath restricted to saved files) |
+| 2026-10-20 22:34 | 6 | settings window, safeStorage keys, llm.js (Gemini/Groq/Ollama) with validate + 2 retries; few-shot examples checked by gen-test; no-key error path verified, live AI call not tested (no key) |
+| 2026-10-20 22:34 | 7 | custom icon; dmg 133 MB arm64 (monaco moved to devDeps, was 152 MB); packaged app tested with empty env via CDP: toolchains ok, buggy C++ WA test 1, fixed C++ AC 200, Java AC (fixed: g++ needed PATH for `ld`); README |
+| 2026-10-20 22:34 | 2–6 | note: phases 2–6 were written together, so only the phase 6 commit builds on its own |
