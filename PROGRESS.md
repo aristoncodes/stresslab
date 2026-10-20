@@ -2,10 +2,10 @@
 
 > Claude Code: update this file at the end of every phase. Tick boxes, update the percentage, and add a line to the log.
 
-**Overall: 92% (48 / 52 tasks)**
+**Overall: 94% (49 / 52 tasks)**
 
 ```
-[██████████████████░░] 92%
+[███████████████████░] 94%
 ```
 
 | Phase | Name | Tasks | Done | Status |
@@ -17,7 +17,7 @@
 | 4 | Failure window | 4 | 4 | ✅ Done |
 | 5 | Desktop APIs | 6 | 6 | ✅ Done |
 | 6 | AI spec + Settings | 6 | 6 | ✅ Done |
-| 7 | Package & submit | 5 | 3 | 🟨 In progress |
+| 7 | Package & submit | 5 | 4 | 🟨 In progress |
 | 8 | Extras (P2) | 2 | 0 | ⬜ Not started |
 
 Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
@@ -87,7 +87,7 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 - [x] electron-builder config (dmg, arm64 or universal, icon)
 - [x] Build .dmg and test it on a clean launch
 - [x] README: features, screenshots, setup, Gatekeeper bypass, architecture, IPC list
-- [ ] Final demo run (C++ bug found, Java run, AI spec) — C++ + Java verified in packaged app; AI spec needs your Gemini key
+- [x] Final demo run (C++ bug found, Java run, AI spec) — C++ + Java in packaged app; AI spec 4/4 problems on Groq and Gemini
 - [ ] Submit repo, AI chat link, .dmg on portal — your step (repo is private until you make it public)
 
 ## Phase 8 — Extras (P2, only if time remains)
@@ -108,3 +108,4 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 | 2026-10-20 22:34 | 6 | settings window, safeStorage keys, llm.js (Gemini/Groq/Ollama) with validate + 2 retries; few-shot examples checked by gen-test; no-key error path verified, live AI call not tested (no key) |
 | 2026-10-20 22:34 | 7 | custom icon; dmg 133 MB arm64 (monaco moved to devDeps, was 152 MB); packaged app tested with empty env via CDP: toolchains ok, buggy C++ WA test 1, fixed C++ AC 200, Java AC (fixed: g++ needed PATH for `ld`); README |
 | 2026-10-20 22:34 | 2–6 | note: phases 2–6 were written together, so only the phase 6 commit builds on its own |
+| 2026-10-20 22:59 | 6–7 | live AI test: Groq gpt-oss-120b 4/4 valid specs in 0.6–2.2 s; Gemini 4/4 but gemini-flash-latest overloaded (503/timeouts) → added auto-fallback to gemini-flash-lite-latest after 30 s or 429/5xx; Groq default changed from retired llama-3.3-70b-versatile; dmg rebuilt |

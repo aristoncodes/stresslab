@@ -3,6 +3,9 @@
 import { validateSpec } from './generator.js'
 
 const TIMEOUT_MS = 60000
+// gemini-flash-latest is sometimes overloaded; the lite alias is much faster.
+const GEMINI_FALLBACK = 'gemini-flash-lite-latest'
+const FALLBACK_AFTER_MS = 30000 // give the primary Gemini model this long before falling back
 const MAX_RETRIES = 2
 
 const SYSTEM_PROMPT = `You convert the "Input" section of a competitive programming problem into a small test-generator spec.
@@ -73,14 +76,14 @@ function buildMessages(problemText) {
   return msgs
 }
 
-async function postJson(url, body, headers = {}) {
+async function postJson(url, body, headers = {}, timeoutMs = TIMEOUT_MS) {
   let res
   try {
     res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...headers },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(TIMEOUT_MS)
+      signal: AbortSignal.timeout(timeoutMs)
     })
   } catch (e) {
     throw new Error(e.name === 'TimeoutError' ? 'Request timed out' : `Network error: ${e.message}`)
@@ -99,8 +102,8 @@ async function postJson(url, body, headers = {}) {
   return json
 }
 
-// messages: [{ role: 'user'|'assistant', content }]; returns the reply text.
-async function chat({ provider, model, apiKey }, system, messages) {
+// One request. messages: [{ role: 'user'|'assistant', content }]; returns the reply text.
+async function chatOnce({ provider, model, apiKey, timeoutMs }, system, messages) {
   if (provider === 'gemini') {
     if (!apiKey) throw new Error('No Gemini API key. Add one in Settings (free at aistudio.google.com).')
     const json = await postJson(
@@ -110,7 +113,8 @@ async function chat({ provider, model, apiKey }, system, messages) {
         contents: messages.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
         generationConfig: { temperature: 0.2 }
       },
-      { 'x-goog-api-key': apiKey }
+      { 'x-goog-api-key': apiKey },
+      timeoutMs
     )
     return json?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? ''
   }
@@ -137,6 +141,21 @@ async function chat({ provider, model, apiKey }, system, messages) {
   throw new Error(`Unknown provider "${provider}"`)
 }
 
+const isBusy = (e) => /^HTTP (429|500|503)\b|timed out/.test(e.message)
+
+// Like chatOnce, but an overloaded/slow Gemini model falls back to the lite alias.
+// Returns { text, model } so callers can stick with (and report) the model that answered.
+async function chat(llm, system, messages) {
+  const canFallBack = llm.provider === 'gemini' && llm.model !== GEMINI_FALLBACK
+  try {
+    const text = await chatOnce({ ...llm, timeoutMs: canFallBack ? FALLBACK_AFTER_MS : TIMEOUT_MS }, system, messages)
+    return { text, model: llm.model }
+  } catch (e) {
+    if (!canFallBack || !isBusy(e)) throw e
+    return { text: await chatOnce({ ...llm, model: GEMINI_FALLBACK }, system, messages), model: GEMINI_FALLBACK }
+  }
+}
+
 // Models sometimes wrap output in ``` fences despite instructions.
 function cleanSpec(text) {
   const fenced = /```[a-z]*\n([\s\S]*?)```/i.exec(text)
@@ -145,27 +164,32 @@ function cleanSpec(text) {
 
 /**
  * Problem text → validated spec. On a parser error, retries with the error
- * message (max 2 retries). Returns { ok, spec, attempts, error? }.
+ * message (max 2 retries). Returns { ok, spec, attempts, model, fellBack, error? }.
  */
 export async function specFromText(llm, problemText) {
   const messages = buildMessages(problemText)
   let spec = ''
   let error = ''
+  let model = llm.model
   for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
-    spec = cleanSpec(await chat(llm, SYSTEM_PROMPT, messages))
+    const reply = await chat({ ...llm, model }, SYSTEM_PROMPT, messages)
+    model = reply.model // after a fallback, keep using the model that answered
+    spec = cleanSpec(reply.text)
     const v = validateSpec(spec)
-    if (v.ok) return { ok: true, spec, attempts: attempt }
+    const info = { attempts: attempt, model, fellBack: model !== llm.model }
+    if (v.ok) return { ok: true, spec, ...info }
     error = v.message
     messages.push(
       { role: 'assistant', content: spec },
       { role: 'user', content: `The spec parser reported: ${error}\nFix it and output only the corrected spec.` }
     )
   }
-  return { ok: false, spec, attempts: MAX_RETRIES + 1, error }
+  return { ok: false, spec, attempts: MAX_RETRIES + 1, model, fellBack: model !== llm.model, error }
 }
 
 // Settings "Test" button: a tiny round-trip to check provider/model/key.
 export async function testConnection(llm) {
-  const reply = await chat(llm, 'Reply with the single word OK.', [{ role: 'user', content: 'ping' }])
-  return reply.trim().slice(0, 40) || '(empty reply)'
+  const { text, model } = await chat(llm, 'Reply with the single word OK.', [{ role: 'user', content: 'ping' }])
+  const reply = text.trim().slice(0, 40) || '(empty reply)'
+  return model === llm.model ? reply : `${reply} (${llm.model} was busy; answered by ${model})`
 }

@@ -13,9 +13,10 @@ export default function ProblemInput({ value, onChange, onSpec }) {
     try {
       const r = await window.api.specFromText(value)
       onSpec(r.spec)
+      const via = r.fellBack ? ` (main model busy, used ${r.model})` : ''
       setNote(
         r.ok
-          ? { kind: 'ok', text: `Spec generated${r.attempts > 1 ? ` after ${r.attempts} attempts` : ''}. Review it below.` }
+          ? { kind: 'ok', text: `Spec generated${r.attempts > 1 ? ` after ${r.attempts} attempts` : ''}. Review it below.${via}` }
           : { kind: 'err', text: `AI spec still invalid after ${r.attempts} attempts (${r.error}). Fix it by hand.` }
       )
     } catch (e) {

@@ -8,7 +8,7 @@ export const PROVIDERS = ['gemini', 'groq', 'ollama']
 
 const DEFAULTS = {
   provider: 'gemini',
-  models: { gemini: 'gemini-flash-latest', groq: 'llama-3.3-70b-versatile', ollama: 'qwen2.5-coder:7b' },
+  models: { gemini: 'gemini-flash-latest', groq: 'openai/gpt-oss-120b', ollama: 'qwen2.5-coder:7b' },
   defaultTests: 1000,
   baseTimeoutSec: 2,
   cppFlags: '-O2 -std=c++17',
