@@ -48,6 +48,16 @@ Missing languages are shown as `○ none` in the sidebar with an install hint; t
    - right-click **StressLab.app → Open → Open**, or
    - run `xattr -cr /Applications/StressLab.app` in Terminal, then open it normally.
 
+## Built-in AI key (optional)
+
+A build can include a shared fallback key so people who download the `.dmg` can use the AI without their own key. The key comes from an environment variable at **build time** only; it is never in the repo.
+
+```bash
+STRESSLAB_GROQ_KEY=gsk_... npm run build:mac      # optional: STRESSLAB_GEMINI_KEY=...
+```
+
+A key saved in Settings always takes precedence. The built-in key is masked in the bundle, but anything shipped in an app can be extracted: use a dedicated free key you can revoke, never a paid one.
+
 ## Run from source
 
 ```bash
