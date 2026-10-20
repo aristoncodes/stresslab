@@ -7,7 +7,7 @@ import { getToolchains } from './toolchains.js'
 import { validateSpec, parseSpec, matchSample, PROFILES } from './generator.js'
 import { startRun, stopRun, getResult } from './stress.js'
 import { getPublicSettings, saveSettings, getSettings, getApiKey, PROVIDERS } from './settings.js'
-import { specFromText, testConnection } from './llm.js'
+import { specFromText, testConnection, estimateComplexity } from './llm.js'
 import { openFailureWindow, openSettingsWindow } from './windows.js'
 import { LANGUAGES } from './languages.js'
 
@@ -71,6 +71,12 @@ export function registerIpc() {
   })
 
   ipcMain.handle('stress:stop', () => stopRun())
+
+  // AI estimate: { sol, problem, spec } -> { time, space, bottleneck, explanation, maxOperations, verdict }
+  ipcMain.handle('complexity:estimate', (_e, { sol, problem, spec } = {}) => {
+    const p = checkProgram(sol, 'solution')
+    return estimateComplexity(llmConfig(), { code: p.code, lang: p.lang, problem: isStr(problem, 50000) ? problem : '', spec: isStr(spec) ? spec : '' })
+  })
 
   ipcMain.handle('failure:data', (_e, runId) => getResult(String(runId)))
   ipcMain.handle('failure:open', (_e, runId) => void openFailureWindow(String(runId)))

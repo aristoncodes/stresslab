@@ -26,6 +26,9 @@ const api = {
   onProgress: on('stress:progress'), // ({ runId, test, tests, testsPerSec })
   onResult: on('stress:result'), // (full result)
 
+  // Time complexity
+  estimateComplexity: invoke('complexity:estimate'), // ({ sol, problem, spec }) -> AI estimate
+
   // Failure window
   getFailure: invoke('failure:data'), // (runId) -> result | null
   openFailure: invoke('failure:open'), // (runId)

@@ -2,10 +2,10 @@
 
 > Claude Code: update this file at the end of every phase. Tick boxes, update the percentage, and add a line to the log.
 
-**Overall: 95% (59 / 62 tasks)**
+**Overall: 97% (60 / 62 tasks, 1 skipped)**
 
 ```
-[███████████████████░] 95%
+[███████████████████░] 97%
 ```
 
 | Phase | Name | Tasks | Done | Status |
@@ -18,7 +18,7 @@
 | 5 | Desktop APIs | 6 | 6 | ✅ Done |
 | 6 | AI spec + Settings | 6 | 6 | ✅ Done |
 | 7 | Package & submit | 5 | 4 | 🟨 In progress |
-| 8 | Extras (P2) | 2 | 0 | ⬜ Not started |
+| 8 | Extras (P2) | 2 | 1 | ✅ Done (1 ⏭) |
 | 9 | Feedback round | 10 | 10 | ✅ Done |
 
 Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
@@ -104,8 +104,8 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 - [x] AI lists "# limit name: MIN..MAX" for every constraint first; app cross-checks the spec against its own limits
 
 ## Phase 8 — Extras (P2, only if time remains)
-- [ ] Complexity: AI Big-O estimate of the solution (`complexity:estimate`)
-- [ ] Complexity: measured timing over growing n + curve fit (`complexity:measure`)
+- [x] Complexity: AI Big-O estimate of the solution (`complexity:estimate`)
+- [⏭] Complexity: measured timing over growing n + curve fit — built and working (O(N)/O(N log N)/O(N²)/O(N⁴) identified), then removed at the user's request (show only the AI estimate)
 
 ---
 
@@ -126,3 +126,4 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 | 2026-10-21 00:08 | 9 | generators: random/edge/max/pattern + `full` ranges + min()/max(); overflow demo passes 200 random tests but fails on test 3 with Max values; mountains spec: 0 violations over ~16k cases in all 4 generators; AI now writes k: int 1..min(n,m) with full 0..1e9 (first attempt rejected by new size-minimum check) |
 | 2026-10-21 00:15 | 9 | user report: buggy mountains solution (int diff overflow) passed 1000 tests. Cause: Max made strings uniform and k = n = m, so g was a power of 2 and the wrapped diff gave the same answer. Fix: Max keeps dependent sizes/strings random, values 60% limit / 15% min / 25% spread → caught on tests 3-59 for 5/5 seeds. AI now lists # limit lines first; spec cross-checked against them (Groq: 3/3 first attempt) |
 | 2026-10-21 00:28 | 9 | built-in key reverted (user preferred each user bringing a key); startup Groq key dialog: shown when no key saved, wrong key → "HTTP 401: Invalid API Key", real key tested + saved + dialog closes; dmg rebuilt with no key (plain or masked) in app.asar |
+| 2026-10-21 00:46 | 8 | time complexity: AI estimate (Groq) returns time/space, bottleneck, ops at limits, verdict — on the mountains solution O(Σ n·m) fits, brute O(n²m²) too slow. Measured mode was built (×√2 growth, duration-weighted fit, log-factor ties) then removed per user: only the AI estimate is shown |

@@ -70,7 +70,7 @@ Students practicing on Codeforces / CSES / LeetCode / AtCoder, on macOS.
 | F16 | Custom checker program for "print any valid answer" problems |
 | F17 | History window: past runs and failing cases saved to `userData/history.json` |
 | F18 | Persistent JVM / batching to speed up Java |
-| F19 | Time complexity: (a) AI estimate of the solution's Big-O via `llm.js` (`complexity:estimate`), (b) measured: run the solution on inputs of growing size from the spec, fit time vs n against O(1), O(log n), O(n), O(n log n), O(n²), O(n³), O(2ⁿ) (`complexity:measure`) |
+| F19 | Time complexity: AI estimate of the solution's Big-O, bottleneck and verdict at the limits via `llm.js` (`complexity:estimate`). (A measured variant was built and removed at the user's request.) |
 
 ## 6. User flow
 

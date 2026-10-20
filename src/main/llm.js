@@ -1,6 +1,6 @@
 // LLM calls (main process only, built-in fetch, no SDKs).
 // Providers: Gemini (default), Groq (OpenAI-compatible), Ollama (local).
-import { parseSpec, validateSpec, matchSample, constValue, constOf, declarations } from './generator.js'
+import { parseSpec, validateSpec, matchSample, constValue, constOf, declarations, parseLimits } from './generator.js'
 
 const TIMEOUT_MS = 60000
 // gemini-flash-latest is sometimes overloaded; the lite alias is much faster.
@@ -95,15 +95,6 @@ function buildMessages(problemText, sampleInput) {
   const sample = sampleInput ? `\n\nSample input (the spec must print this exact layout):\n${sampleInput}` : ''
   msgs.push({ role: 'user', content: problemText + sample })
   return msgs
-}
-
-// "# limit name: MIN..MAX" lines the model lists before the spec.
-function parseLimits(spec) {
-  return [...spec.matchAll(/^\s*#\s*limit\s+([A-Za-z]\w*)[^:]*:\s*(.+?)\s*\.\.\s*(.+?)\s*$/gm)].map((m) => ({
-    name: m[1].replace(/_(i|j|ij|k)$/i, ''), // a_i → a
-    min: m[2],
-    max: m[3]
-  }))
 }
 
 // Checks that the spec reaches the limits the model itself listed: sizes keep
@@ -272,4 +263,34 @@ export async function testConnection(llm) {
   const { text, model } = await chat(llm, 'Reply with the single word OK.', [{ role: 'user', content: 'ping' }])
   const reply = text.trim().slice(0, 40) || '(empty reply)'
   return model === llm.model ? reply : `${reply} (${llm.model} was busy; answered by ${model})`
+}
+
+const COMPLEXITY_PROMPT = `You analyse competitive programming solutions.
+Given the problem constraints and a solution, reply with ONLY a JSON object (no markdown):
+{
+  "time": "Big-O time in terms of the input sizes, e.g. O(n log n) or O(n·m)",
+  "space": "Big-O extra memory",
+  "bottleneck": "the loop/call that dominates, quoting a short code fragment",
+  "explanation": "2-3 sentences: why",
+  "maxOperations": "rough operation count at the maximum constraints, e.g. 4e10",
+  "verdict": "fits" | "risky" | "too slow"
+}
+Use about 1e8 simple operations per second and a 1-2 second time limit for the verdict.
+Respect "sum of n over all test cases" style constraints when estimating.`
+
+// Solution code (+ problem text and "# limit" lines) → AI complexity estimate.
+export async function estimateComplexity(llm, { code, lang, problem, spec }) {
+  const limits = parseLimits(spec ?? '').map((l) => `${l.name}: ${l.min}..${l.max}`).join('\n')
+  const content = [
+    problem?.trim() && `Problem input section:\n${problem.trim()}`,
+    limits && `Constraints:\n${limits}`,
+    `Solution (${lang}):\n${code}`
+  ].filter(Boolean).join('\n\n')
+  const reply = await chat(llm, COMPLEXITY_PROMPT, [{ role: 'user', content }])
+  const json = /\{[\s\S]*\}/.exec(reply.text)
+  try {
+    return { ...JSON.parse(json[0]), model: reply.model }
+  } catch {
+    throw new Error('The AI did not return valid JSON: ' + reply.text.slice(0, 200))
+  }
 }

@@ -18,6 +18,7 @@ Built with Electron for the *Application Development — Desktop Application* co
 - **Spec language** → random generator with a seeded RNG, line-numbered errors and **small-first growth** (first failing test is usually tiny).
 - **AI spec**: paste the problem's *Input* section → Groq (default) / Gemini / Ollama first lists every constraint's real limits (`# limit n: 1..2*10^5`), then writes the spec → the app parses it, checks that the spec keeps each size's real minimum and gives each value its `full MIN..MAX` range, checks it against the problem's **sample input**, and retries with the error (max 2 retries). Gemini automatically falls back to `gemini-flash-lite-latest` when `gemini-flash-latest` is overloaded.
 - **Four test generators**, cycled per test: *Random* (small, growing), *Edge cases* (minimum sizes, values at min/max/±1/0), *Max values* (maximum independent sizes, values mostly at the problem's real limits, string contents and dependent sizes still random → catches `int` overflow) and *Patterns* (all-equal/sorted/reversed/alternating arrays, path/star trees, uniform strings). Toggle them in Run options.
+- **Time complexity (AI)**: one click sends the solution and the `# limit` lines to the AI, which returns time/space complexity, the bottleneck code, an operation estimate at the limits and a verdict (*fits* / *risky* / *too slow*).
 - **Sample test**: paste the statement's sample input/output. Every run checks it first (the brute must print the sample output, then your solution must match it), and the spec box shows live whether the spec matches the sample's format.
 - **Exact failing case**: the failure window names the random test (#37, seed) and, for multi-test inputs, the failing **test case inside it** ("test case 3 of 5, input lines 6–7"), shown as a standalone `t = 1` input you can copy.
 - Custom generator mode: your own generator program in any of the 3 languages (seed in `argv[1]`).
@@ -138,6 +139,7 @@ repeat t {
 | `spec:fromText` | invoke | `{ text, sample }` → LLM → spec checked by parser + sample (with retries) |
 | `stress:start` | invoke | compile, check the sample, start a run → `{ runId, seed }` |
 | `stress:stop` | invoke | kill the active run |
+| `complexity:estimate` | invoke | `{ sol, problem, spec }` → AI time/space complexity, bottleneck, verdict |
 | `stress:progress` | event (main → renderer) | `{ test, tests, testsPerSec }`, throttled to 10/s |
 | `stress:result` | event (main → renderer) | final verdict + details |
 | `failure:data` | invoke | full result for the failure window |

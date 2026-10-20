@@ -284,6 +284,15 @@ export function parseSpec(text) {
   return root
 }
 
+// "# limit name: MIN..MAX" lines the model lists before the spec.
+export function parseLimits(spec) {
+  return [...spec.matchAll(/^\s*#\s*limit\s+([A-Za-z]\w*)[^:]*:\s*(.+?)\s*\.\.\s*(.+?)\s*$/gm)].map((m) => ({
+    name: m[1].replace(/_(i|j|ij|k)$/i, ''), // a_i → a
+    min: m[2],
+    max: m[3]
+  }))
+}
+
 // Value of a constant expression like "2*10^5" or "1e9"; null if it isn't one.
 export function constValue(text) {
   try {

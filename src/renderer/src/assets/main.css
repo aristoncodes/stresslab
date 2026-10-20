@@ -451,3 +451,12 @@ pre.io {
   margin-bottom: 4px;
   padding: 4px 6px;
 }
+
+/* ---- Time complexity ---- */
+.complexity > div {
+  margin-bottom: 4px;
+}
+.complexity code {
+  font-family: var(--mono);
+  font-size: 11px;
+}

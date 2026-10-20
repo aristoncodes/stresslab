@@ -8,6 +8,7 @@ import Sidebar from '../components/Sidebar'
 import StatusTable from '../components/StatusTable'
 import SampleBox from '../components/SampleBox'
 import KeyPrompt from '../components/KeyPrompt'
+import ComplexityBox from '../components/ComplexityBox'
 import { usePersistentState, hasSaved } from '../lib/persist'
 import { DEFAULT_STATE, TEMPLATES, GEN_TEMPLATES, langInfo } from '../lib/defaults'
 import { cleanError } from '../lib/errors'
@@ -166,6 +167,7 @@ export default function MainView() {
             {pane('brute', 'Brute')}
           </div>
           <StatusTable runs={runs} />
+          <ComplexityBox sol={state.sol} problem={state.problem} spec={state.spec} disabled={running} />
         </main>
         <Sidebar
           toolchains={toolchains}
