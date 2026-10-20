@@ -2,7 +2,7 @@
 
 > Claude Code: update this file at the end of every phase. Tick boxes, update the percentage, and add a line to the log.
 
-**Overall: 10% (5 / 50 tasks)**
+**Overall: 10% (5 / 52 tasks)**
 
 ```
 [██░░░░░░░░░░░░░░░░░░] 10%
@@ -18,6 +18,7 @@
 | 5 | Desktop APIs | 6 | 0 | ⬜ Not started |
 | 6 | AI spec + Settings | 6 | 0 | ⬜ Not started |
 | 7 | Package & submit | 5 | 0 | ⬜ Not started |
+| 8 | Extras (P2) | 2 | 0 | ⬜ Not started |
 
 Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 
@@ -88,6 +89,10 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 - [ ] README: features, screenshots, setup, Gatekeeper bypass, architecture, IPC list
 - [ ] Final demo run (C++ bug found, Java run, AI spec)
 - [ ] Submit repo, AI chat link, .dmg on portal
+
+## Phase 8 — Extras (P2, only if time remains)
+- [ ] Complexity: AI Big-O estimate of the solution (`complexity:estimate`)
+- [ ] Complexity: measured timing over growing n + curve fit (`complexity:measure`)
 
 ---
 
