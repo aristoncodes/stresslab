@@ -421,3 +421,33 @@ pre.io {
   vertical-align: middle;
   margin: 0 2px 0 0;
 }
+
+/* ---- Startup API-key dialog ---- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+.modal {
+  width: 460px;
+  max-width: calc(100% - 32px);
+}
+.modal p,
+.modal ol {
+  margin: 0 0 8px;
+}
+.modal ol {
+  padding-left: 20px;
+}
+.modal a {
+  color: var(--link);
+}
+.key-input {
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 4px 6px;
+}

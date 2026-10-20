@@ -7,6 +7,7 @@ import Box from '../components/Box'
 import Sidebar from '../components/Sidebar'
 import StatusTable from '../components/StatusTable'
 import SampleBox from '../components/SampleBox'
+import KeyPrompt from '../components/KeyPrompt'
 import { usePersistentState, hasSaved } from '../lib/persist'
 import { DEFAULT_STATE, TEMPLATES, GEN_TEMPLATES, langInfo } from '../lib/defaults'
 import { cleanError } from '../lib/errors'
@@ -133,6 +134,7 @@ export default function MainView() {
 
   return (
     <div className="app">
+      <KeyPrompt />
       <HeaderBar />
       <div className="layout">
         <main className="content">

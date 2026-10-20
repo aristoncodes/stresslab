@@ -63,7 +63,7 @@ npm run build:mac    # → dist/StressLab-1.0.0-arm64.dmg
 2. Press **⌘R** → *Wrong answer on test 1–3*, input `1 / -2`, and the failure window opens.
 3. Fix the bug (`samples/maxsub/sol_fixed.cpp`) → *Accepted (1000 tests)*.
 4. Switch the solution language to Java and open `samples/maxsub/Solution.java` → *Accepted*.
-5. Settings (⌘,) → add a free Groq key (or Gemini) → **Generate spec with AI** from the problem text; the result is checked against the sample input.
+5. On first launch a dialog asks for a free Groq key (link: https://console.groq.com/keys); paste it there or later in Settings (⌘,) (Gemini also works) → **Generate spec with AI** from the problem text; the result is checked against the sample input.
 6. Overflow demo: `samples/overflow/` — the `int` sum passes every *Random* test; with *Max values* enabled it fails on test 3 (`8000000000` vs `-589934592`).
 7. Multi-test demo: `samples/multitest/` (spec, sample, buggy C++, Python brute) → the failure window points at the failing test case.
 
