@@ -4,11 +4,25 @@ A macOS desktop app for **stress-testing competitive programming solutions**. Pa
 
 Built with Electron for the *Application Development — Desktop Application* course project.
 
+## Download
+
+**[⬇ Download StressLab 1.0.0 for macOS (Apple Silicon, .dmg)](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-1.0.0-arm64.dmg)** · [all releases](https://github.com/aristoncodes/stresslab/releases)
+
+Open the .dmg, drag **StressLab** to Applications, then right-click it → **Open** the first time (the app is unsigned; see [Install](#install-the-dmg-unsigned-app)). On first launch it asks for a free [Groq API key](https://console.groq.com/keys) for the AI features; everything else works without one.
+
+## Screenshots
+
+**Main window** — problem → AI spec with real limits, live check against the sample, four test generators, status table and the AI time-complexity estimate:
+
 ![Main window](docs/screenshots/main.png)
 
-| Failure window | Settings |
+| Failure window: the exact failing test case | Overflow caught by the *Max values* generator |
 |---|---|
-| ![Failure window](docs/screenshots/failure.png) | ![Settings](docs/screenshots/settings.png) |
+| ![Failure window with the failing test case highlighted](docs/screenshots/failure.png) | ![int overflow caught on a max-values test](docs/screenshots/failure-max.png) |
+
+| First launch: bring your own free Groq key | Settings |
+|---|---|
+| ![Startup dialog asking for a Groq API key](docs/screenshots/key-popup.png) | ![Settings window](docs/screenshots/settings.png) |
 
 ## Features
 
@@ -44,7 +58,7 @@ Missing languages are shown as `○ none` in the sidebar with an install hint; t
 
 ## Install the .dmg (unsigned app)
 
-1. Open `StressLab-1.0.0-arm64.dmg` and drag **StressLab** to Applications.
+1. [Download the .dmg](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-1.0.0-arm64.dmg), open it and drag **StressLab** to Applications.
 2. The app is not signed/notarized, so macOS blocks the first launch. Either
    - right-click **StressLab.app → Open → Open**, or
    - run `xattr -cr /Applications/StressLab.app` in Terminal, then open it normally.
