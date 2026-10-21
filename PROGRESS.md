@@ -2,10 +2,10 @@
 
 > Claude Code: update this file at the end of every phase. Tick boxes, update the percentage, and add a line to the log.
 
-**Overall: 97% (67 / 70 tasks, 1 skipped)**
+**Overall: 99% (68 / 70 tasks, 1 skipped)**
 
 ```
-[███████████████████░] 97%
+[████████████████████] 99%
 ```
 
 | Phase | Name | Tasks | Done | Status |
@@ -20,7 +20,7 @@
 | 7 | Package & submit | 5 | 4 | 🟨 In progress |
 | 8 | Extras (P2) | 2 | 1 | ✅ Done (1 ⏭) |
 | 9 | Feedback round | 12 | 12 | ✅ Done |
-| 10 | Windows + Linux (v1.1.0) | 6 | 5 | 🟨 In progress |
+| 10 | Windows + Linux (v1.1.0) | 6 | 6 | ✅ Done |
 
 Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 
@@ -112,7 +112,7 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 - [x] M2 desktop/UI: per-OS menus, ⌘/Ctrl labels, taskbar overlay / badge count, session-only keys without a keyring, fonts, CRLF
 - [x] M3 packaging: NSIS installer + portable zip, AppImage + .deb, icon.ico; CI package + release jobs
 - [x] M4 docs: README download table and per-OS requirements
-- [ ] Release v1.1.0 from CI (tag) with all installers
+- [x] Release v1.1.0 from CI (tag) with all installers
 
 ## Phase 8 — Extras (P2, only if time remains)
 - [x] Complexity: AI Big-O estimate of the solution (`complexity:estimate`)
@@ -140,3 +140,4 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 | 2026-10-21 00:46 | 8 | time complexity: AI estimate (Groq) returns time/space, bottleneck, ops at limits, verdict — on the mountains solution O(Σ n·m) fits, brute O(n²m²) too slow. Measured mode was built (×√2 growth, duration-weighted fit, log-factor ties) then removed per user: only the AI estimate is shown |
 | 2026-10-21 09:14 | 9 | walkthrough: shown after the key dialog on first launch, 11 steps verified to highlight the right section with the card inside the window, remembered after Finish, replay via header/Help menu. README rewritten; v1.0.0 release with the dmg (uploaded with curl after gh timed out) |
 | 2026-10-21 19:26 | 10 | Windows/Linux: engine tests pass on real macOS, Windows (MinGW g++ 15.2, py launcher, Temurin 21) and Linux (g++-14, Python 3.12, Temurin 21) CI runners, 105 checks each; deep recursion 10^6 passes on all three; per-OS menus/labels/badges/key storage; installers configured and built in CI |
+| 2026-10-21 20:39 | 10 | all installers built by CI (macOS 126 MB, Windows 260 MB, Linux 221 MB artifacts); v1.1.0 tagged → CI release job attaches them. Next: Sublime-style editor (PRD-editor.md, v1.2.0) |

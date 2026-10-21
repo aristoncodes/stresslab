@@ -1,6 +1,6 @@
 # PRD — StressLab Editor (Sublime-style code editor)
 
-**Status:** Draft for approval · **Date:** 2026-10-21 · **Owner:** aristoncodes
+**Status:** Approved · **Date:** 2026-10-21 · **Owner:** aristoncodes
 **Builds on:** [PRD.md](PRD.md), [PRD-cross-platform.md](PRD-cross-platform.md) · **Target release:** v1.2.0
 
 ---
@@ -169,15 +169,11 @@ Renderer (sandboxed)                                       Main process
 | E-M3 | Sublime power features | R14–R18, R22, R24–R25 (Goto Anything, Command Palette, split, snippets, hot exit, settings, distraction-free) |
 | E-M4 | Integration + release | R4–R5, README/screenshots, CI tests, v1.2.0 installers for all 3 OSes |
 
-## 11. Decisions so far
+## 11. Decisions (2026-10-21)
 
-- Style: **Sublime Text-like** (fast, minimal, keyboard-first, Monokai), not a full VS Code clone.
+- Style: **Sublime Text-like** (fast, minimal, keyboard-first), not a full VS Code clone.
+- Scope: **all four milestones** (E-M1 to E-M4) for v1.2.0.
+- Theme: **dark StressLab Monokai** by default; light theme in settings.
+- Key bindings: **Sublime-style on every OS** (⌘ on macOS, Ctrl on Windows/Linux).
 - Start mode: **last used**.
-- Process: this PRD first, then build.
-
-## 12. Open questions
-
-1. Scope for v1.2: all four milestones (recommended), or stop after E-M2 (editor + build/test panel)?
-2. Default editor theme: dark Monokai (Sublime default, recommended) or follow the system light/dark setting?
-3. Key bindings: Sublime-style on every OS (recommended) or each OS's usual conventions where they differ?
-4. Release v1.1.0 (Windows/Linux, already built) first, then v1.2.0 with the editor (recommended)?
+- v1.1.0 (Windows/Linux) is released first; the editor ships in v1.2.0.
