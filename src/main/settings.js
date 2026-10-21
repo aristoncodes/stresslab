@@ -13,6 +13,7 @@ const DEFAULTS = {
   defaultTests: 1000,
   baseTimeoutSec: 2,
   cppFlags: '-O2 -std=c++17',
+  recentFolders: [], // editor: most recent first (set by the main process only)
   keys: {} // provider -> base64 of safeStorage-encrypted key
 }
 
@@ -38,7 +39,7 @@ function load() {
 
 // Settings safe to hand to the renderer: keys replaced by "is a key saved?" flags.
 export function getPublicSettings() {
-  const { keys, ...rest } = load()
+  const { keys, recentFolders: _paths, ...rest } = load() // folder paths stay in main
   return {
     ...rest,
     hasKey: Object.fromEntries(PROVIDERS.map((p) => [p, !!(keys[p] || sessionKeys[p])])),

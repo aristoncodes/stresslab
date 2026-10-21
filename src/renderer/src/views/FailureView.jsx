@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { DiffEditor } from '@monaco-editor/react'
 import { verdictText, verdictClass, PROFILE_LABELS } from '../../../shared/verdict.js'
 import { langInfo } from '../lib/defaults'
-import { useDarkMode, monacoTheme } from '../lib/useDarkMode'
 import { cleanError } from '../lib/errors'
 
 // Windows programs print \r\n; show plain lines so the diff has no phantom changes.
@@ -123,7 +122,6 @@ function InputSection({ r }) {
 }
 
 function DiffSection({ left, right, leftLabel, rightLabel, message }) {
-  const dark = useDarkMode()
   return (
     <section className="grow">
       <div className="diff-labels">
@@ -131,7 +129,7 @@ function DiffSection({ left, right, leftLabel, rightLabel, message }) {
         <h2>{rightLabel}</h2>
       </div>
       <div className="diff">
-        <DiffEditor original={left} modified={right} theme={monacoTheme(dark)} options={DIFF_OPTIONS} />
+        <DiffEditor original={left} modified={right} theme="stresslab-mariana" options={DIFF_OPTIONS} />
       </div>
       <div className="checker">Checker: {message}</div>
     </section>

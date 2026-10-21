@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import MainView from './views/MainView'
+import Shell from './views/Shell'
 import FailureView from './views/FailureView'
 import SettingsView from './views/SettingsView'
 
@@ -16,5 +16,5 @@ export default function App() {
   const [view, arg] = hash.slice(1).split('/')
   if (view === 'failure') return <FailureView key={arg} runId={arg} />
   if (view === 'settings') return <SettingsView />
-  return <MainView />
+  return <Shell />
 }

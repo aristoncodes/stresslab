@@ -6,7 +6,7 @@ import { key } from '../lib/keys'
 const STEPS = [
   {
     title: 'Welcome to StressLab',
-    text: 'StressLab finds the smallest test where your solution and a slow-but-correct brute force disagree. This tour shows where to paste what, in the order you use it.'
+    text: `StressLab finds the smallest test where your solution and a slow-but-correct brute force disagree. This tour shows where to paste what, in the order you use it. There is also a Sublime-style code editor: press ${key('⇧E')} to switch between the editor and the stress tester.`
   },
   {
     target: 'problem',

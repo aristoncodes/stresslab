@@ -173,7 +173,10 @@ Renderer (sandboxed)                                       Main process
 
 - Style: **Sublime Text-like** (fast, minimal, keyboard-first), not a full VS Code clone.
 - Scope: **all four milestones** (E-M1 to E-M4) for v1.2.0.
-- Theme: **dark StressLab Monokai** by default; light theme in settings.
+- Theme: ~~Monokai~~ → **Sublime Text 4's default look (Adaptive theme + Mariana colours)** for the editor *and* the stress tester (user request, 2026-10-21).
+- **No mode switch button:** ⌘⇧E / Ctrl+Shift+E switches; the status bar shows the hint.
+- **CP layout + build like Sublime:** code | `inputf.in` / `outputf.in`; ⌘B saves, compiles, runs with `inputf.in` and writes `outputf.in`; output panel with `[Finished in …s]`.
+- **Stress tester ↔ editor:** "From editor…" picker on Solution/Brute/Generator links a pane to an open editor file; every Run uses the editor's current text.
 - Key bindings: **Sublime-style on every OS** (⌘ on macOS, Ctrl on Windows/Linux).
 - Start mode: **last used**.
 - v1.1.0 (Windows/Linux) is released first; the editor ships in v1.2.0.

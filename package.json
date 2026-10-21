@@ -18,9 +18,10 @@
     "build:mac": "npm run build && electron-builder --mac",
     "smoke": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/smoke.mjs",
     "gen-test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gen-test.mjs",
-    "test": "npm run gen-test && npm run smoke",
+    "test": "npm run gen-test && npm run ws-test && npm run smoke",
     "build:win": "npm run build && electron-builder --win",
-    "build:linux": "npm run build && electron-builder --linux"
+    "build:linux": "npm run build && electron-builder --linux",
+    "ws-test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/workspace-test.mjs"
   },
   "dependencies": {
     "@electron-toolkit/utils": "^4.0.0"

@@ -1,0 +1,375 @@
+/* ---- Main window: header + one of two modes ---- */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.mode-pane {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.mode-pane[hidden] {
+  display: none;
+}
+.editor-pane {
+  overflow: hidden;
+}
+
+/* ---- Editor mode: Sublime Text 4 (Adaptive theme + Mariana) ---- */
+.editor-view {
+  --ed-bg: #303841;
+  --ed-side: #262d34;
+  --ed-tab: #2b323a;
+  --ed-tab-active: #303841;
+  --ed-border: #1e242a;
+  --ed-text: #d8dee9;
+  --ed-muted: #a6acb9;
+  --ed-accent: #f9ae58;
+  --ed-pink: #ec5f66;
+  --ed-hover: #343d46;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--ed-bg);
+  color: var(--ed-text);
+  font-family: -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 13px;
+}
+.editor-view button {
+  background: #3b444e;
+  color: var(--ed-text);
+  border: 1px solid #4f5b66;
+}
+.editor-view button:disabled {
+  opacity: 0.4;
+}
+.editor-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.editor-sidebar {
+  width: 240px;
+  flex: none;
+  background: var(--ed-side);
+  border-right: 1px solid var(--ed-border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.editor-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.editor-host {
+  flex: 1;
+  min-height: 0;
+}
+
+/* File tree */
+.tree {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.tree-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 8px 6px 12px;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ed-muted);
+}
+.tree-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tree-actions button {
+  background: none;
+  border: none;
+  color: var(--ed-muted);
+  padding: 0 4px;
+  font-size: 14px;
+}
+.tree-actions button:hover {
+  color: var(--ed-text);
+}
+.tree-body {
+  flex: 1;
+  overflow: auto;
+  padding-bottom: 12px;
+}
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 22px;
+  padding-right: 8px;
+  cursor: default;
+  white-space: nowrap;
+  color: #cfcfc2;
+}
+.tree-row:hover {
+  background: var(--ed-hover);
+}
+.tree-row.active {
+  background: #3b444e;
+  color: #fff;
+}
+.tree-icon {
+  width: 14px;
+  flex: none;
+  color: var(--ed-muted);
+  font-size: 10px;
+}
+.tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tree-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--ed-bg);
+  color: var(--ed-text);
+  border: 1px solid var(--ed-accent);
+  padding: 0 4px;
+  font: inherit;
+}
+.tree-error {
+  padding: 6px 10px;
+  color: var(--ed-pink);
+  font-size: 12px;
+  border-top: 1px solid var(--ed-border);
+}
+.tree-empty {
+  padding: 20px 14px;
+  color: var(--ed-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Tabs */
+.tab-bar {
+  display: flex;
+  background: var(--ed-side);
+  border-bottom: 1px solid var(--ed-border);
+  min-height: 32px;
+  overflow-x: auto;
+}
+.tab-bar::-webkit-scrollbar {
+  height: 3px;
+}
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 0 14px;
+  background: var(--ed-tab);
+  border-right: 1px solid var(--ed-border);
+  color: #b8b8b0;
+  cursor: default;
+  white-space: nowrap;
+  max-width: 220px;
+}
+.tab.active {
+  background: var(--ed-tab-active);
+  color: #fff;
+  box-shadow: none;
+}
+.tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.editor-view .tab-close {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  position: relative;
+}
+/* × on hover; a dot for unsaved tabs (Sublime style) */
+.tab-close::before {
+  content: '×';
+  position: absolute;
+  inset: 0;
+  line-height: 16px;
+  color: var(--ed-muted);
+  visibility: hidden;
+}
+.tab:hover .tab-close::before,
+.tab.active .tab-close::before {
+  visibility: visible;
+}
+.tab.dirty .tab-close::before {
+  content: '●';
+  font-size: 9px;
+  visibility: visible;
+  color: var(--ed-text);
+}
+.tab.dirty .tab-close:hover::before {
+  content: '×';
+  font-size: 13px;
+}
+
+/* Status bar */
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  background: var(--ed-side);
+  border-top: 1px solid var(--ed-border);
+  color: var(--ed-muted);
+  font-size: 12px;
+}
+.editor-view .status-mode {
+  background: none;
+  border: none;
+  color: var(--ed-muted);
+  padding: 0;
+}
+.editor-view .status-mode:hover {
+  color: var(--ed-text);
+}
+.status-right {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.status-error {
+  color: var(--ed-pink);
+  cursor: pointer;
+}
+
+/* Welcome screen */
+.welcome {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--ed-muted);
+}
+.welcome h2 {
+  color: #6e7a85;
+  font-weight: 300;
+  font-size: 26px;
+  margin: 0 0 6px;
+}
+.welcome table {
+  margin-top: 18px;
+  border-collapse: collapse;
+}
+.welcome td {
+  padding: 3px 12px;
+}
+.welcome .kbd {
+  color: var(--ed-text);
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  text-align: right;
+}
+
+/* ---- Stress tester: Sublime-style status bar ---- */
+.app-status {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.app-status-right {
+  display: flex;
+  gap: 16px;
+}
+.app-status button.link {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.app-status button.link:hover {
+  color: var(--text);
+}
+
+/* Code pane linked to an editor file */
+.linked {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border: 1px solid #4f5b66;
+  border-radius: 2px;
+  color: var(--ok);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+/* ---- Build output panel (⌘B), Sublime style ---- */
+.editor-column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.editor-area.cp {
+  flex-direction: row;
+}
+.build-panel {
+  flex: none;
+  height: 28%;
+  min-height: 90px;
+  margin: 0;
+  padding: 8px 10px;
+  overflow: auto;
+  background: var(--ed-bg);
+  border-top: 1px solid var(--ed-border);
+  color: var(--ed-text);
+  font-family: 'SF Mono', Menlo, Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.build-panel.running {
+  color: var(--ed-muted);
+}
+
+/* ---- CP layout: input over output on the right ---- */
+.cp-column {
+  width: 34%;
+  min-width: 240px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--ed-border);
+}
+.cp-pane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.cp-pane + .cp-pane {
+  border-top: 1px solid var(--ed-border);
+}
+.cp-pane-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.cp-missing {
+  padding: 16px;
+  color: var(--ed-muted);
+}

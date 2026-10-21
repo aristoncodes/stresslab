@@ -31,10 +31,16 @@ export function buildMenu() {
     {
       label: 'File',
       submenu: [
-        { label: 'Open into Editor…', accelerator: 'CmdOrCtrl+O', click: command('open') },
-        ...(isMac ? [] : [settings]),
+        { label: 'New File', accelerator: 'CmdOrCtrl+N', click: command('newFile') },
+        { label: 'Open Folder…', accelerator: 'CmdOrCtrl+Shift+O', click: command('openFolder') },
+        { label: 'Open File…', accelerator: 'CmdOrCtrl+O', click: command('open') },
         { type: 'separator' },
-        isMac ? { role: 'close' } : { role: 'quit', label: 'Exit' }
+        { label: 'Save', accelerator: 'CmdOrCtrl+S', click: command('save') },
+        { label: 'Save All', accelerator: 'CmdOrCtrl+Alt+S', click: command('saveAll') },
+        { type: 'separator' },
+        ...(isMac ? [] : [settings, { type: 'separator' }]),
+        { label: 'Close Tab', accelerator: 'CmdOrCtrl+W', click: command('closeTab') },
+        ...(isMac ? [] : [{ role: 'quit', label: 'Exit' }])
       ]
     },
     // Needed for Copy/Paste/Undo shortcuts to work in text fields and editors.
@@ -42,6 +48,9 @@ export function buildMenu() {
     {
       label: 'Run',
       submenu: [
+        { label: 'Build && Run File', accelerator: 'CmdOrCtrl+B', click: command('build') },
+        { label: 'Show Build Output', accelerator: 'CmdOrCtrl+Shift+B', click: command('togglePanel') },
+        { type: 'separator' },
         { label: 'Run Stress Test', accelerator: 'CmdOrCtrl+R', click: command('run') },
         { label: 'Stop', accelerator: 'CmdOrCtrl+.', click: command('stop') }
       ]
@@ -49,6 +58,15 @@ export function buildMenu() {
     {
       label: 'View',
       submenu: [
+        { label: 'Switch Editor / Stress Test', accelerator: 'CmdOrCtrl+Shift+E', click: command('toggleMode') },
+        {
+          label: 'Layout',
+          submenu: [
+            { label: 'Single', accelerator: 'Alt+CmdOrCtrl+1', click: command('layoutSingle') },
+            { label: 'CP: Code | Input / Output', accelerator: 'Alt+CmdOrCtrl+2', click: command('layoutCP') }
+          ]
+        },
+        { type: 'separator' },
         ...(is.dev ? [{ role: 'reload', accelerator: 'CmdOrCtrl+Shift+R' }, { role: 'toggleDevTools' }] : []),
         { role: 'resetZoom' },
         { role: 'zoomIn' },

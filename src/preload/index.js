@@ -49,7 +49,27 @@ const api = {
   testLlm: invoke('settings:test'), // ({ provider, model, apiKey? }) -> reply text
   openSettings: invoke('window:settings'),
 
-  // Native menu → renderer ('open' | 'run' | 'stop' | 'tour')
+  // Editor: files inside the opened folder (paths are relative to it)
+  wsOpenFolder: invoke('ws:openFolder'), // () -> { name, recent } | null
+  wsOpenFile: invoke('ws:openFile'), // () -> { name, recent, file } | null
+  wsReopen: invoke('ws:reopen'), // () -> last folder | null
+  wsList: invoke('ws:list'), // (relDir) -> [{ name, path, dir }]
+  wsAllFiles: invoke('ws:allFiles'), // () -> [relPath]
+  wsRead: invoke('ws:read'), // (relPath) -> text
+  wsWrite: invoke('ws:write'), // ({ path, text })
+  wsCreate: invoke('ws:create'), // ({ path, dir })
+  wsRename: invoke('ws:rename'), // ({ from, to })
+  wsTrash: invoke('ws:trash'), // (relPath)
+  wsReveal: invoke('ws:reveal'), // (relPath)
+  wsSetDirty: invoke('ws:dirty'), // (unsaved buffer count, for the quit prompt)
+  onWsChanged: on('ws:changed'), // ([relPath]) changed by other programs
+  buildRun: invoke('build:run'), // ({ path }) -> { stdout, stderr, exitCode, runMs, seconds, inputFile, outputFile, compileError? }
+  buildStop: invoke('build:stop'),
+  contextMenu: invoke('ui:contextMenu'), // ([{ id, label } | { type: 'separator' }]) -> id | null
+  confirm: invoke('ui:confirm'), // ({ message, detail, buttons }) -> button index
+
+  // Native menu → renderer ('open' | 'run' | 'stop' | 'tour' | 'newFile' | 'openFolder' |
+  // 'save' | 'saveAll' | 'closeTab' | 'toggleMode')
   onMenuCommand: on('menu:command')
 }
 

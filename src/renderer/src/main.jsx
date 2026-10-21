@@ -1,5 +1,6 @@
 import './monaco'
 import './assets/main.css'
+import './assets/editor.css'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'

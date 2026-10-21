@@ -1,6 +1,6 @@
 // All BrowserWindows. One renderer bundle; the URL hash picks the view
 // (#main, #failure/<runId>, #settings).
-import { BrowserWindow, shell } from 'electron'
+import { BrowserWindow, shell, dialog } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 
@@ -44,8 +44,22 @@ export function getWindow(name) {
   return w && !w.isDestroyed() ? w : null
 }
 
-export function createMainWindow() {
+// unsavedCount: number of unsaved editor buffers (asks before closing if > 0).
+export function createMainWindow(unsavedCount = () => 0) {
   const win = create('main', { width: 1280, height: 860, minWidth: 1100, minHeight: 720, title: 'StressLab' })
+  win.on('close', (e) => {
+    const n = unsavedCount()
+    if (!n) return
+    const choice = dialog.showMessageBoxSync(win, {
+      type: 'warning',
+      message: `You have ${n} unsaved file${n > 1 ? 's' : ''} in the editor.`,
+      detail: 'Your changes will be lost if you close without saving.',
+      buttons: ['Cancel', 'Close Without Saving'],
+      defaultId: 0,
+      cancelId: 0
+    })
+    if (choice === 0) e.preventDefault()
+  })
   loadRoute(win, 'main')
   return win
 }

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import HeaderBar from '../components/HeaderBar'
 import ProblemInput from '../components/ProblemInput'
 import SpecEditor, { ModeSwitch } from '../components/SpecEditor'
 import CodePane from '../components/CodePane'
@@ -13,11 +12,15 @@ import Tour from '../components/Tour'
 import { usePersistentState, hasSaved, flag, setFlag } from '../lib/persist'
 import { DEFAULT_STATE, TEMPLATES, GEN_TEMPLATES, langInfo } from '../lib/defaults'
 import { cleanError } from '../lib/errors'
+import { useOpenFiles, editorText } from '../lib/openFiles'
+import { runLanguage } from '../lib/files'
 
 const STORE = 'stresslab.main'
 const time = () => new Date().toLocaleTimeString([], { hour12: false })
 
-export default function MainView() {
+// The stress tester. `active` = currently shown; `menuCommand` = latest native-menu
+// command ({ cmd, n }); `tourSignal` bumps to replay the walkthrough.
+export default function MainView({ active, menuCommand, tourSignal }) {
   const [state, setState] = usePersistentState(STORE, DEFAULT_STATE)
   const set = useCallback((patch) => setState((s) => ({ ...s, ...patch })), [setState])
   const [toolchains, setToolchains] = useState(null)
@@ -81,18 +84,37 @@ export default function MainView() {
             : null
   const canRun = !blockReason
 
+  // Programs linked to editor files take the editor's current text (unsaved edits too).
+  const editorFiles = useOpenFiles()
+  const withLinkedCode = (s) => {
+    const next = { ...s }
+    for (const role of ['sol', 'brute', 'gen']) {
+      const text = s[role].link ? editorText(s[role].link) : null
+      if (text !== null && text !== undefined) next[role] = { ...s[role], code: text }
+    }
+    return next
+  }
+  useEffect(() => {
+    if (active) setState(withLinkedCode)
+  }, [active, setState]) // eslint-disable-line react-hooks/exhaustive-deps
+  const linkTo = (role, path) =>
+    setState((s) => ({ ...s, [role]: { lang: runLanguage(path) ?? s[role].lang, code: editorText(path) ?? s[role].code, link: path } }))
+  const unlink = (role) => setState((s) => ({ ...s, [role]: { ...s[role], link: undefined } }))
+
   const run = useCallback(async () => {
     if (!canRun) return
+    const fresh = withLinkedCode(state)
+    setState(fresh)
     const id = runs.length ? runs[0].id + 1 : 1
     const row = { id, when: time(), sol: state.sol.lang, brute: state.brute.lang, tests: state.tests, result: { verdict: 'RUNNING' } }
     setRuns((rs) => [row, ...rs])
     try {
       const { runId } = await window.api.startStress({
-        sol: state.sol,
-        brute: state.brute,
+        sol: { lang: fresh.sol.lang, code: fresh.sol.code },
+        brute: { lang: fresh.brute.lang, code: fresh.brute.code },
         mode: state.mode,
         spec: state.spec,
-        gen: state.gen,
+        gen: { lang: fresh.gen.lang, code: fresh.gen.code },
         sample: { input: state.sampleIn, output: state.sampleOut },
         profiles: state.profiles,
         tests: state.tests,
@@ -119,8 +141,15 @@ export default function MainView() {
 
   // Native menu shortcuts (Run, Stop, Open, Walkthrough) — refs keep the latest handlers.
   const handlers = useRef({})
-  handlers.current = { run, stop, open: () => openInto(focused), tour: () => setTour(true) }
-  useEffect(() => window.api.onMenuCommand((cmd) => handlers.current[cmd]?.()), [])
+  handlers.current = { run, stop, open: () => openInto(focused) }
+  useEffect(() => {
+    if (active && menuCommand) handlers.current[menuCommand.cmd]?.()
+  }, [menuCommand, active])
+  useEffect(() => {
+    if (tourSignal) setTour(true)
+  }, [tourSignal])
+
+
 
   // Switching language swaps in that language's template if the editor is empty or untouched.
   const changeLang = (role, lang, templates) => {
@@ -136,7 +165,10 @@ export default function MainView() {
       program={state[role]}
       toolchains={toolchains}
       height={height}
-      onChange={(code) => setState((s) => ({ ...s, [role]: { ...s[role], code } }))}
+      onChange={(code) => setState((s) => ({ ...s, [role]: { ...s[role], code, link: undefined } }))}
+      editorFiles={editorFiles}
+      onLink={(path) => linkTo(role, path)}
+      onUnlink={() => unlink(role)}
       onLangChange={(lang) => changeLang(role, lang, templates)}
       onOpen={() => openInto(role)}
       onFocus={() => setFocused(role)}
@@ -144,10 +176,9 @@ export default function MainView() {
   )
 
   return (
-    <div className="app">
+    <div className="stress-view">
       <KeyPrompt onDone={onKeyDone} />
-      {keyDone && tour && <Tour onClose={closeTour} />}
-      <HeaderBar onTour={() => setTour(true)} />
+      {active && keyDone && tour && <Tour onClose={closeTour} />}
       <div className="layout">
         <main className="content">
           {state.mode === 'spec' ? (

@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron'
 import { electronApp } from '@electron-toolkit/utils'
 import { createMainWindow } from './windows.js'
 import { registerIpc } from './ipc.js'
+import { registerEditorIpc, unsavedCount } from './editorIpc.js'
 import { buildMenu } from './menu.js'
 import { getToolchains } from './toolchains.js'
 import { stopRun } from './stress.js'
@@ -12,11 +13,12 @@ app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.stresslab.app')
   getToolchains() // start detection early; the sidebar awaits the same promise
   registerIpc()
+  registerEditorIpc()
   buildMenu()
-  createMainWindow()
+  createMainWindow(unsavedCount)
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
+    if (BrowserWindow.getAllWindows().length === 0) createMainWindow(unsavedCount)
   })
 })
 

@@ -1,40 +1,24 @@
-/* Design tokens — see DESIGN.md §1 */
+/* Design tokens — Sublime Text 4 "Mariana" look, shared by every window. */
 :root {
-  --bg: #ffffff;
-  --bg-alt: #f8f8f8;
-  --border: #b9b9b9;
-  --border-light: #e1e1e1;
-  --text: #222222;
-  --text-muted: #666666;
-  --link: #0000cc;
-  --accent: #3b5998;
-  --ok: #008000;
-  --wa: #cc0000;
-  --tle: #b45f06;
-  --ce: #555555;
-  --running: #0000cc;
-  --font: Verdana, 'Segoe UI', Arial, 'DejaVu Sans', sans-serif;
+  --bg: #303841; /* editor background */
+  --bg-alt: #262d34; /* panels, title strips, sidebar */
+  --bg-input: #262d34;
+  --border: #1e242a;
+  --border-light: #3b444e;
+  --text: #d8dee9;
+  --text-muted: #a6acb9;
+  --link: #6699cc;
+  --accent: #262d34;
+  --ok: #99c794;
+  --wa: #ec5f66;
+  --tle: #f9ae58;
+  --ce: #a6acb9;
+  --running: #6699cc;
+  --font: -apple-system, 'Segoe UI', 'Helvetica Neue', 'DejaVu Sans', Arial, sans-serif;
   --mono: 'SF Mono', Menlo, Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace;
   --fs: 13px;
   --fs-small: 11px;
-  color-scheme: light dark;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1e1e1e;
-    --bg-alt: #262626;
-    --border: #444;
-    --border-light: #333;
-    --text: #ddd;
-    --text-muted: #999;
-    --link: #6ea8ff;
-    --accent: #2b3f66;
-    --ok: #4caf50;
-    --wa: #ff6b6b;
-    --tle: #f0a050;
-    --ce: #aaa;
-    --running: #6ea8ff;
-  }
+  color-scheme: dark;
 }
 
 * {
@@ -65,9 +49,16 @@ textarea {
   border-radius: 2px;
 }
 button {
-  background: var(--bg-alt);
+  background: #3b444e;
+  border-color: #4f5b66;
   padding: 2px 8px;
   cursor: pointer;
+}
+input,
+select,
+textarea {
+  background: var(--bg-input);
+  border-color: #4f5b66;
 }
 button:hover:not(:disabled) {
   border-color: var(--text-muted);
@@ -163,25 +154,6 @@ pre {
 }
 
 /* ---- Header + layout ---- */
-.header-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--accent);
-  color: #fff;
-  padding: 6px 12px;
-}
-.header-bar .brand {
-  font-weight: bold;
-  font-size: 15px;
-}
-.header-bar .nav-current {
-  font-weight: bold;
-}
-.header-bar .sep {
-  margin: 0 8px;
-  opacity: 0.6;
-}
 .layout {
   display: flex;
   gap: 8px;
@@ -218,6 +190,9 @@ pre {
   min-width: 0;
 }
 .box-title {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -229,6 +204,8 @@ pre {
   font-size: 12px;
 }
 .box-actions {
+  text-transform: none;
+  letter-spacing: normal;
   display: flex;
   gap: 4px;
   align-items: center;
