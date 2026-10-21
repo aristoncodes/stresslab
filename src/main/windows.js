@@ -50,13 +50,26 @@ export function createMainWindow() {
   return win
 }
 
-// Reuses the failure window if it's open, otherwise creates it.
+// The failure details open as a popup attached to the main window (a sheet on
+// macOS): it stays on top, moves with the main window and is closed with its
+// Close button or Esc. Reused if it's already open.
 export function openFailureWindow(runId) {
-  const win =
-    getWindow('failure') ?? create('failure', { width: 900, height: 650, minWidth: 640, minHeight: 480, title: 'Failure' })
+  const existing = getWindow('failure')
+  if (existing) {
+    loadRoute(existing, `failure/${runId}`)
+    existing.show()
+    existing.focus()
+    return existing
+  }
+  const main = getWindow('main')
+  const [mw, mh] = main ? main.getContentSize() : [1280, 860]
+  const win = create('failure', {
+    width: Math.min(900, mw - 60),
+    height: Math.min(640, mh - 60),
+    title: 'Failure',
+    ...(main ? { parent: main, modal: true } : {})
+  })
   loadRoute(win, `failure/${runId}`)
-  win.show()
-  win.focus()
   return win
 }
 

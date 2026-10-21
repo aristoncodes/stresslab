@@ -42,7 +42,7 @@ The built-in walkthrough (Help → Show Walkthrough) shows the same steps inside
 | **2. Sample** | Paste the sample input and output from the statement. | Live check that the spec matches the sample's format ("✓ matches sample input"). On every run the sample is tested first: the brute must reproduce the expected output, then your solution must match it. |
 | **3. Code** | Paste (or **Open…**) your solution and a brute force. C++, Python or Java, and they can differ. | Compiles each program once, in its own temporary folder. |
 | **4. Run** | Pick the number of tests and the generators, press **Run (⌘R)**. | Generates tests that start tiny and grow, cycling through four generators (below), runs both programs with a time limit, and compares their outputs. |
-| **5. Result** | Read the verdict. | *Accepted*, or a failure window with the input, **which test case** inside a multi-test input failed (as a ready-to-run `t = 1` input), a side-by-side diff, or the crash output. Notification + dock badge. |
+| **5. Result** | Read the verdict. | *Accepted*, or a failure popup (attached to the main window, closes with Esc) with the input, **which test case** inside a multi-test input failed (as a ready-to-run `t = 1` input), a side-by-side diff, or the crash output. Notification + dock badge. |
 | **6. Complexity** | Click **Estimate with AI**. | The AI reads your solution and the limits and reports time/space complexity, the bottleneck, and whether it fits the time limit. |
 
 ### The four test generators
@@ -62,7 +62,7 @@ Example: an `int` array sum passes all 200 *Random* tests and fails on test 3 wi
 - **AI spec from the statement** with Groq (default), Gemini (falls back to `flash-lite` when busy) or local Ollama; validated by the parser, the limits it listed and the sample, with up to 2 automatic retries.
 - **Spec language** (below) with a seeded generator, line-numbered errors and small-first growth, or bring your own generator program in any language.
 - **Codeforces-style verdicts**: *Accepted*, *Wrong answer on test N / on sample*, *Time limit exceeded*, *Runtime error*, *Compilation error*, *Brute failed*.
-- **Failure window**: test number, generator and seed, input, failing test case, Monaco diff, stderr and exit code; Copy, Save as .txt, Show in Finder.
+- **Failure popup** (a sheet attached to the main window; Close or Esc): test number, generator and seed, input, failing test case, Monaco diff, stderr and exit code; Copy, Save as .txt, Show in Finder.
 - **AI time-complexity estimate** for your solution.
 - **Desktop integration**: native menu and shortcuts (⌘O ⌘R ⌘. ⌘,), notifications, dock badge and progress bar, open/save dialogs, clipboard, first-launch walkthrough.
 - **Secure by design**: sandboxed renderer, all system work in the main process, API keys encrypted with the macOS Keychain (`safeStorage`) and never shown to the page.
@@ -200,7 +200,7 @@ npm run build:mac    # → dist/StressLab-1.0.0-arm64.dmg
 
 | API | Where |
 |---|---|
-| `BrowserWindow` (main, failure, settings) | `windows.js` |
+| `BrowserWindow` (main; failure popup as a modal child/sheet; settings) | `windows.js` |
 | `ipcMain.handle` / `ipcRenderer.invoke` / `contextBridge` | `ipc.js`, `preload/index.js` |
 | `dialog.showOpenDialog` / `showSaveDialog` | open code into an editor, save a failing input |
 | `Notification` | "Wrong answer on test 37" when a run fails |

@@ -16,13 +16,30 @@ export default function FailureView({ runId }) {
   useEffect(() => {
     if (r) document.title = verdictText(r)
   }, [r])
+  // It's a popup without a title bar: close with Esc (or the Close button).
+  useEffect(() => {
+    const onKey = (e) => e.key === 'Escape' && window.close()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   if (r === undefined) return <div className="pad muted">Loading…</div>
-  if (r === null) return <div className="pad">This run is no longer available.</div>
+  if (r === null) {
+    return (
+      <div className="pad">
+        This run is no longer available. <button onClick={() => window.close()}>Close</button>
+      </div>
+    )
+  }
 
   return (
     <div className="failure">
-      <h1 className={verdictClass(r.verdict)}>{verdictText(r)}</h1>
+      <div className="failure-head">
+        <h1 className={verdictClass(r.verdict)}>{verdictText(r)}</h1>
+        <button onClick={() => window.close()} title="Close (Esc)">
+          Close
+        </button>
+      </div>
       <div className="meta">{meta(r)}</div>
       {r.verdict === 'CE' ? (
         <section>

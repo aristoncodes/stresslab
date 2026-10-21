@@ -493,3 +493,11 @@ pre.io {
   margin: 0 0 8px;
   line-height: 1.45;
 }
+
+/* ---- Failure popup header ---- */
+.failure-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}

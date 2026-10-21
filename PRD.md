@@ -49,7 +49,7 @@ Students practicing on Codeforces / CSES / LeetCode / AtCoder, on macOS.
 | F6 | Small-first growth | Sizes start at the minimum and grow toward the spec maximum as test number increases, so the first failure is small. |
 | F7 | Comparison | Modes: exact (whitespace-normalized tokens), float tolerance (abs/rel, default 1e-6). |
 | F8 | Stress loop | Run up to N tests (default 1000) or until first failure; Stop button kills running processes. Live counter + tests/sec. |
-| F9 | Failure window | Separate `BrowserWindow`: verdict, test #, seed, input, your output, brute output, Monaco diff view. Buttons: Copy input, Save input as .txt. |
+| F9 | Failure window | Separate `BrowserWindow`, shown as a modal popup (sheet) attached to the main window, closed with Close/Esc: verdict, test #, seed, input, your output, brute output, Monaco diff view. Buttons: Copy input, Save input as .txt. |
 | F10 | Secure IPC | `contextIsolation: true`, `nodeIntegration: false`, all system work in main process, narrow `contextBridge` API. |
 | F11 | .dmg build | electron-builder, arm64 (or universal), unsigned; README explains Gatekeeper bypass. |
 
