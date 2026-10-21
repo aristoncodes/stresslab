@@ -21,6 +21,7 @@ export default function ComplexityBox({ sol, problem, spec, disabled }) {
   return (
     <Box
       title="Time complexity (solution)"
+      tour="complexity"
       actions={
         <button disabled={ai?.busy || disabled} onClick={estimate}>
           {ai?.busy ? 'Asking AI…' : 'Estimate with AI'}

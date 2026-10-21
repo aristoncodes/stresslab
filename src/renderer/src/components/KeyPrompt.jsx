@@ -5,14 +5,22 @@ const KEY_URL = 'https://console.groq.com/keys'
 
 // Shown at startup while no Groq key is saved: asks for the user's own free key.
 // The key goes to the main process (encrypted with safeStorage); "Later" asks again next launch.
-export default function KeyPrompt() {
+// onDone() fires once the dialog is closed (or wasn't needed).
+export default function KeyPrompt({ onDone }) {
   const [open, setOpen] = useState(false)
   const [key, setKey] = useState('')
   const [status, setStatus] = useState(null) // { kind, text }
 
   useEffect(() => {
-    window.api.getSettings().then((s) => setOpen(!s.hasKey.groq))
-  }, [])
+    window.api.getSettings().then((s) => {
+      setOpen(!s.hasKey.groq)
+      if (s.hasKey.groq) onDone?.()
+    })
+  }, [onDone])
+  const close = () => {
+    setOpen(false)
+    onDone?.()
+  }
   if (!open) return null
 
   async function save() {
@@ -21,7 +29,7 @@ export default function KeyPrompt() {
       const reply = await window.api.testLlm({ provider: 'groq', model: 'openai/gpt-oss-120b', apiKey: key.trim() })
       await window.api.setSettings({ provider: 'groq', apiKey: { provider: 'groq', value: key.trim() } })
       setStatus({ kind: 'v-ok', text: `Saved. Groq replied "${reply}".` })
-      setTimeout(() => setOpen(false), 1200)
+      setTimeout(close, 1200)
     } catch (e) {
       setStatus({ kind: 'v-wa', text: cleanError(e) })
     }
@@ -60,7 +68,7 @@ export default function KeyPrompt() {
           {status && <div className={`small ${status.kind}`}>{status.text}</div>}
           <div className="small muted">The key is stored encrypted on this Mac only. Everything except AI spec generation works without it.</div>
           <div className="row-end">
-            <button onClick={() => setOpen(false)}>Later</button>
+            <button onClick={close}>Later</button>
             <button className="primary" disabled={!key.trim()} onClick={save}>
               Save key
             </button>

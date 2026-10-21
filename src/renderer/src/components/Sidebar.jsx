@@ -44,7 +44,7 @@ function shortVersion(id, t) {
 
 function RunOptionsBox({ state, set, running, canRun, blockReason, onRun, onStop }) {
   return (
-    <Box title="Run options">
+    <Box title="Run options" tour="options">
       <table className="form">
         <tbody>
           <tr>
@@ -101,7 +101,7 @@ function RunOptionsBox({ state, set, running, canRun, blockReason, onRun, onStop
         </div>
       )}
       <div className="small muted">Timeout is scaled ×3 for Python, ×4 for Java.</div>
-      <button className="primary wide" disabled={!canRun} onClick={onRun} title={blockReason}>
+      <button className="primary wide" data-tour="run" disabled={!canRun} onClick={onRun} title={blockReason}>
         Run ⌘R
       </button>
       <button className="wide" disabled={!running} onClick={onStop}>

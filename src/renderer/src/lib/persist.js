@@ -26,6 +26,23 @@ export const hasSaved = (key) => {
   }
 }
 
+// Simple on/off flags (e.g. "walkthrough seen").
+export function flag(key) {
+  try {
+    return localStorage.getItem(key) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function setFlag(key) {
+  try {
+    localStorage.setItem(key, '1')
+  } catch {
+    /* ignore */
+  }
+}
+
 // useState that is restored from / saved (debounced) to localStorage.
 export function usePersistentState(key, fallback) {
   const [value, setValue] = useState(() => load(key, fallback))

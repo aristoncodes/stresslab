@@ -27,7 +27,7 @@ export default function ProblemInput({ value, sample, onChange, onSpec }) {
   }
 
   return (
-    <Box title="Problem input">
+    <Box title="Problem input" tour="problem">
       <textarea
         className="problem"
         rows={4}

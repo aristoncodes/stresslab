@@ -4,7 +4,7 @@ import Box from './Box'
 // format and run both programs before stress testing (output is optional).
 export default function SampleBox({ input, output, onChange }) {
   return (
-    <Box title="Sample test (from the problem statement)">
+    <Box title="Sample test (from the problem statement)" tour="sample">
       <div className="sample-grid">
         <label>
           <span className="small muted">Sample input</span>

@@ -1,4 +1,4 @@
-// Native application menu. Run/Stop/Open are forwarded to the main window's
+// Native application menu. Run/Stop/Open/Walkthrough are forwarded to the main window's
 // renderer as `menu:command`, so the menu and the buttons share one code path.
 import { app, Menu } from 'electron'
 import { is } from '@electron-toolkit/utils'
@@ -49,7 +49,11 @@ export function buildMenu() {
         { role: 'togglefullscreen' }
       ]
     },
-    { role: 'windowMenu' }
+    { role: 'windowMenu' },
+    {
+      role: 'help',
+      submenu: [{ label: 'Show Walkthrough', click: command('tour') }]
+    }
   ]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }

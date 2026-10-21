@@ -14,13 +14,14 @@ const OPTIONS = {
 
 // Monaco editor with a language dropdown and Open… button.
 // `toolchains` marks missing languages in the dropdown.
-export default function CodePane({ title, program, onChange, onLangChange, onOpen, onFocus, toolchains, height = 340 }) {
+export default function CodePane({ title, program, onChange, onLangChange, onOpen, onFocus, toolchains, height = 340, tour }) {
   const dark = useDarkMode()
   const missing = (id) => toolchains && toolchains[id] && !toolchains[id].ok
   return (
     <Box
       title={title}
       className="code-pane"
+      tour={tour}
       bodyClassName="flush"
       actions={
         <>

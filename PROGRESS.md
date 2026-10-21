@@ -2,10 +2,10 @@
 
 > Claude Code: update this file at the end of every phase. Tick boxes, update the percentage, and add a line to the log.
 
-**Overall: 97% (60 / 62 tasks, 1 skipped)**
+**Overall: 98% (62 / 64 tasks, 1 skipped)**
 
 ```
-[███████████████████░] 97%
+[████████████████████] 98%
 ```
 
 | Phase | Name | Tasks | Done | Status |
@@ -19,7 +19,7 @@
 | 6 | AI spec + Settings | 6 | 6 | ✅ Done |
 | 7 | Package & submit | 5 | 4 | 🟨 In progress |
 | 8 | Extras (P2) | 2 | 1 | ✅ Done (1 ⏭) |
-| 9 | Feedback round | 10 | 10 | ✅ Done |
+| 9 | Feedback round | 12 | 12 | ✅ Done |
 
 Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 
@@ -101,6 +101,8 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 - [x] Sample check also verifies size minimums and full ranges (AI retried on violation)
 - [x] Max generator less uniform (dependent sizes and strings random): user's int-overflow bug now caught 5/5 seeds (was 1000/1000 passing)
 - [x] Startup dialog asks for the user's own free Groq key (link, paste, test + save; "Later" asks again next launch). Built-in shared key was tried and reverted at the user's request
+- [x] First-launch walkthrough (11 steps, highlights each section; Help → Show Walkthrough / header link to replay)
+- [x] README rewritten: download link (v1.0.0 release), how-it-works steps, fresh light-theme screenshots
 - [x] AI lists "# limit name: MIN..MAX" for every constraint first; app cross-checks the spec against its own limits
 
 ## Phase 8 — Extras (P2, only if time remains)
@@ -127,3 +129,4 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 | 2026-10-21 00:15 | 9 | user report: buggy mountains solution (int diff overflow) passed 1000 tests. Cause: Max made strings uniform and k = n = m, so g was a power of 2 and the wrapped diff gave the same answer. Fix: Max keeps dependent sizes/strings random, values 60% limit / 15% min / 25% spread → caught on tests 3-59 for 5/5 seeds. AI now lists # limit lines first; spec cross-checked against them (Groq: 3/3 first attempt) |
 | 2026-10-21 00:28 | 9 | built-in key reverted (user preferred each user bringing a key); startup Groq key dialog: shown when no key saved, wrong key → "HTTP 401: Invalid API Key", real key tested + saved + dialog closes; dmg rebuilt with no key (plain or masked) in app.asar |
 | 2026-10-21 00:46 | 8 | time complexity: AI estimate (Groq) returns time/space, bottleneck, ops at limits, verdict — on the mountains solution O(Σ n·m) fits, brute O(n²m²) too slow. Measured mode was built (×√2 growth, duration-weighted fit, log-factor ties) then removed per user: only the AI estimate is shown |
+| 2026-10-21 09:14 | 9 | walkthrough: shown after the key dialog on first launch, 11 steps verified to highlight the right section with the card inside the window, remembered after Finish, replay via header/Help menu. README rewritten; v1.0.0 release with the dmg (uploaded with curl after gh timed out) |

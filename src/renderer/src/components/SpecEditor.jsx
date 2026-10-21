@@ -4,7 +4,7 @@ import Box from './Box'
 export default function SpecEditor({ spec, onChange, status, mode, onModeChange }) {
   const lines = spec.split('\n').length
   return (
-    <Box title="Spec" actions={<ModeSwitch mode={mode} onChange={onModeChange} />}>
+    <Box title="Spec" tour="spec" actions={<ModeSwitch mode={mode} onChange={onModeChange} />}>
       <textarea
         className="spec mono"
         spellCheck={false}

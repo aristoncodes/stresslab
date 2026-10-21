@@ -1,7 +1,8 @@
 // CF-style section: 1px border, grey title strip, padded content.
-export default function Box({ title, actions, children, className = '', bodyClassName = '' }) {
+// `tour` marks the section for the first-launch walkthrough (components/Tour.jsx).
+export default function Box({ title, actions, children, className = '', bodyClassName = '', tour }) {
   return (
-    <section className={`box ${className}`}>
+    <section className={`box ${className}`} data-tour={tour}>
       <div className="box-title">
         <span>{title}</span>
         {actions && <span className="box-actions">{actions}</span>}

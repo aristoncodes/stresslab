@@ -46,7 +46,7 @@ const api = {
   testLlm: invoke('settings:test'), // ({ provider, model, apiKey? }) -> reply text
   openSettings: invoke('window:settings'),
 
-  // Native menu → renderer ('open' | 'run' | 'stop')
+  // Native menu → renderer ('open' | 'run' | 'stop' | 'tour')
   onMenuCommand: on('menu:command')
 }
 

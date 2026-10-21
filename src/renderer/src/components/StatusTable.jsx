@@ -7,7 +7,7 @@ export default function StatusTable({ runs }) {
   const active = runs.find((r) => r.result.verdict === 'RUNNING')
   const progress = active?.result.tests ? active.result.test / active.result.tests : 0
   return (
-    <Box title="Status" bodyClassName="flush">
+    <Box title="Status" tour="status" bodyClassName="flush">
       <table className="status">
         <thead>
           <tr>

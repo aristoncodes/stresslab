@@ -9,7 +9,8 @@ import StatusTable from '../components/StatusTable'
 import SampleBox from '../components/SampleBox'
 import KeyPrompt from '../components/KeyPrompt'
 import ComplexityBox from '../components/ComplexityBox'
-import { usePersistentState, hasSaved } from '../lib/persist'
+import Tour from '../components/Tour'
+import { usePersistentState, hasSaved, flag, setFlag } from '../lib/persist'
 import { DEFAULT_STATE, TEMPLATES, GEN_TEMPLATES, langInfo } from '../lib/defaults'
 import { cleanError } from '../lib/errors'
 
@@ -23,6 +24,14 @@ export default function MainView() {
   const [specStatus, setSpecStatus] = useState(null)
   const [runs, setRuns] = useState([]) // newest first: { id, when, sol, brute, tests, result }
   const [focused, setFocused] = useState('sol')
+  // First launch: key dialog first, then the walkthrough (replay via Help menu / header).
+  const [keyDone, setKeyDone] = useState(false)
+  const [tour, setTour] = useState(() => !flag('stresslab.tourDone'))
+  const onKeyDone = useCallback(() => setKeyDone(true), [])
+  const closeTour = useCallback(() => {
+    setTour(false)
+    setFlag('stresslab.tourDone')
+  }, [])
   const running = runs.some((r) => r.result.verdict === 'RUNNING')
 
   // Toolchains + first-launch defaults from Settings.
@@ -110,7 +119,7 @@ export default function MainView() {
 
   // Native menu shortcuts (⌘R, ⌘., ⌘O) — refs keep the latest handlers.
   const handlers = useRef({})
-  handlers.current = { run, stop, open: () => openInto(focused) }
+  handlers.current = { run, stop, open: () => openInto(focused), tour: () => setTour(true) }
   useEffect(() => window.api.onMenuCommand((cmd) => handlers.current[cmd]?.()), [])
 
   // Switching language swaps in that language's template if the editor is empty or untouched.
@@ -123,6 +132,7 @@ export default function MainView() {
   const pane = (role, title, templates = TEMPLATES, height) => (
     <CodePane
       title={title}
+      tour={role}
       program={state[role]}
       toolchains={toolchains}
       height={height}
@@ -135,8 +145,9 @@ export default function MainView() {
 
   return (
     <div className="app">
-      <KeyPrompt />
-      <HeaderBar />
+      <KeyPrompt onDone={onKeyDone} />
+      {keyDone && tour && <Tour onClose={closeTour} />}
+      <HeaderBar onTour={() => setTour(true)} />
       <div className="layout">
         <main className="content">
           {state.mode === 'spec' ? (
@@ -156,7 +167,7 @@ export default function MainView() {
               />
             </>
           ) : (
-            <Box title="Generator" actions={<ModeSwitch mode={state.mode} onChange={(mode) => set({ mode })} />}>
+            <Box title="Generator" tour="spec" actions={<ModeSwitch mode={state.mode} onChange={(mode) => set({ mode })} />}>
               <div className="small muted">The generator receives the seed as argv[1] and the test number as argv[2], and prints one test to stdout.</div>
               {pane('gen', 'Generator code', GEN_TEMPLATES, 240)}
             </Box>

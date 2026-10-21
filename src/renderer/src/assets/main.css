@@ -460,3 +460,36 @@ pre.io {
   font-family: var(--mono);
   font-size: 11px;
 }
+
+/* ---- First-launch walkthrough ---- */
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 200; /* above everything; also blocks clicks on the app behind */
+}
+.tour-dim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+.tour-spot {
+  position: fixed;
+  border-radius: 3px;
+  outline: 2px solid #ffd54a;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); /* dims everything except the target */
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+.tour-card {
+  position: fixed;
+  max-width: calc(100% - 24px);
+}
+.tour-card.centered {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.tour-card p {
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
