@@ -1,7 +1,7 @@
 // One table describing how to build and run each supported language.
 // `tc` is the toolchains object from compilers.js, `dir` the program's temp dir.
 import { join } from 'path'
-import { isWin, exeName } from './platform.js'
+import { isWin, isMac, isLinux, exeName } from './platform.js'
 
 // Java requires the file to be named after its public class.
 export function javaClassName(code) {
@@ -17,9 +17,9 @@ export const LANGUAGES = {
     fileName: () => 'main.cpp',
     compile: (tc, dir, file, opts) => ({
       cmd: tc.cpp.path,
-      args: [...opts.cppFlags, ...WIN_CPP_FLAGS, '-I', opts.includeDir, file, '-o', join(dir, exeName('main'))]
+      args: [...opts.cppFlags, ...STACK_FLAGS, '-I', opts.includeDir, file, '-o', join(dir, exeName('main'))]
     }),
-    run: (tc, dir) => ({ cmd: join(dir, exeName('main')), args: [] })
+    run: (tc, dir) => withBigStack(join(dir, exeName('main')))
   },
   python: {
     label: 'Python',
@@ -48,6 +48,13 @@ export const LANGUAGES = {
 
 export const DEFAULT_CPP_FLAGS = ['-O2', '-std=c++17']
 
-// Windows (MinGW): 256 MB stack like Codeforces (the default 1 MB crashes deep
-// recursion) and a static build so the program doesn't need MinGW's DLLs.
-const WIN_CPP_FLAGS = isWin ? ['-static', '-Wl,--stack,268435456'] : []
+// 256 MB stack like Codeforces, so deep recursion (e.g. DFS on a 10^6 path) works.
+// Windows (MinGW): linker flag, plus a static build so the program doesn't need
+// MinGW's DLLs. macOS: linker flag. Linux: the main-thread stack comes from
+// `ulimit -s`, so the program is started through sh with a raised limit.
+const STACK_FLAGS = isWin ? ['-static', '-Wl,--stack,268435456'] : isMac ? ['-Wl,-stack_size,0x10000000'] : []
+
+function withBigStack(exe) {
+  if (!isLinux) return { cmd: exe, args: [] }
+  return { cmd: '/bin/sh', args: ['-c', 'ulimit -s unlimited 2>/dev/null || ulimit -s 262144 2>/dev/null; exec "$0"', exe] }
+}

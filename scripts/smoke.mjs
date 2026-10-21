@@ -99,6 +99,16 @@ check('non-zero exit → RE', r.verdict === 'RE' && r.exitCode === 3)
 r = await run({ sol: { lang: 'cpp', code: sample('sol_fixed.cpp') }, brute: { lang: 'python', code: 'import sys; sys.exit(1)' }, tests: 2 })
 check('brute crash → BRUTE_FAIL', r.verdict === 'BRUTE_FAIL')
 
+// 4b. Deep recursion (10^6 levels) needs the 256 MB stack on every OS
+const deep = `#include <bits/stdc++.h>
+using namespace std;
+int n; vector<int> a;
+long long dfs(int d) { if (d == n) return 0; volatile char pad[32]; pad[0] = (char)d; return (a[d] + 3 * dfs(d + 1) + pad[0] * 0) % 1000003; }
+int main() { n = 1000000; a.resize(n); for (int i = 0; i < n; i++) a[i] = i % 7; cout << dfs(0) << "\\n"; }`
+const deepBrute = 'r = 0\nfor d in range(999999, -1, -1):\n    r = (d % 7 + 3 * r) % 1000003\nprint(r)'
+r = await run({ sol: { lang: 'cpp', code: deep }, brute: { lang: 'python', code: deepBrute }, tests: 1, baseTimeoutMs: 5000 })
+check('deep recursion (10^6 levels) runs', r.verdict === 'AC', `${r.verdict} ${r.message ?? r.stderr ?? ''} ${r.signal ?? ''}`)
+
 // 5. Sample test from the problem statement is checked before random tests
 const sampleIn = sample('sample_in.txt')
 r = await run({ sol: { lang: 'cpp', code: sample('sol_buggy.cpp') }, brute, sample: { input: sampleIn, output: '9' } })
