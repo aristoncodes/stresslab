@@ -10,7 +10,8 @@ files:
   - '!scripts/*'
   - '!resources/**'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md,PRD.md,DESIGN.md,PROGRESS.md}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md,PRD.md,PRD-cross-platform.md,DESIGN.md,PROGRESS.md}'
+  - '!{docs,.github}/**'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
 # bits/stdc++.h shim lives outside app.asar so g++ can read it
 # (resolved via process.resourcesPath/include, see src/main/paths.js).
@@ -27,4 +28,34 @@ mac:
   notarize: false
 dmg:
   artifactName: ${productName}-${version}-${arch}.${ext}
+# Windows: per-user installer (Start-menu shortcut = notifications work) + portable zip.
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch: x64
+    - target: zip
+      arch: x64
+  artifactName: ${productName}-${version}-${arch}-portable.${ext}
+nsis:
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: true
+  shortcutName: StressLab
+  artifactName: ${productName}-Setup-${version}-${arch}.${ext}
+# Linux: AppImage (any distro) + .deb (Ubuntu/Debian, adds a menu entry).
+linux:
+  icon: build/icon.png
+  category: Development
+  maintainer: aristoncodes <170157604+aristoncodes@users.noreply.github.com>
+  synopsis: Stress tester for competitive programming solutions
+  target:
+    - target: AppImage
+      arch: x64
+    - target: deb
+      arch: x64
+appImage:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+deb:
+  artifactName: ${name}_${version}_${arch}.${ext}
 npmRebuild: false

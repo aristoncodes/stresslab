@@ -38,3 +38,68 @@ jobs:
           g++ --version
       - run: npm ci
       - run: npm test
+
+  # Installers for each OS, built natively. Runs for version tags and manual runs.
+  package:
+    name: package (${{ matrix.os }})
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: --mac
+          - os: windows-latest
+            target: --win
+          - os: ubuntu-latest
+            target: --linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx electron-builder ${{ matrix.target }} --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false # unsigned builds
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stresslab-${{ runner.os }}
+          if-no-files-found: error
+          path: |
+            dist/*.dmg
+            dist/*.exe
+            dist/*.zip
+            dist/*.AppImage
+            dist/*.deb
+
+  # On a version tag, attach every installer to the GitHub release.
+  release:
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: StressLab ${{ github.ref_name }}
+          files: artifacts/*
+          body: |
+            StressLab for macOS, Windows and Linux.
+
+            | OS | File | First launch |
+            |---|---|---|
+            | macOS (Apple Silicon) | `StressLab-*-arm64.dmg` | right-click StressLab → Open (unsigned) |
+            | Windows 10/11 (x64) | `StressLab-Setup-*-x64.exe` (installer) or `*-portable.zip` | SmartScreen: More info → Run anyway (unsigned) |
+            | Linux (x64) | `stresslab_*_amd64.deb` (Ubuntu/Debian) or `StressLab-*.AppImage` (any distro) | AppImage: `chmod +x`, may need `libfuse2` |
+
+            Needs the compilers for the languages you use (g++, Python 3, a JDK); the app shows the install command for anything missing. The AI features ask for your own free Groq key on first launch.

@@ -1,9 +1,12 @@
 {
   "name": "stresslab",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Desktop stress tester for competitive programming solutions",
   "main": "./out/main/index.js",
-  "author": "StressLab",
+  "author": {
+    "name": "aristoncodes",
+    "email": "170157604+aristoncodes@users.noreply.github.com"
+  },
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
@@ -15,7 +18,9 @@
     "build:mac": "npm run build && electron-builder --mac",
     "smoke": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/smoke.mjs",
     "gen-test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/gen-test.mjs",
-    "test": "npm run gen-test && npm run smoke"
+    "test": "npm run gen-test && npm run smoke",
+    "build:win": "npm run build && electron-builder --win",
+    "build:linux": "npm run build && electron-builder --linux"
   },
   "dependencies": {
     "@electron-toolkit/utils": "^4.0.0"
@@ -38,5 +43,6 @@
     "react-dom": "^19.3.0",
     "vite": "^8.3.4"
   },
-  "productName": "StressLab"
+  "productName": "StressLab",
+  "homepage": "https://github.com/aristoncodes/stresslab"
 }
