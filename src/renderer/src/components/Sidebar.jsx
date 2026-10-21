@@ -1,6 +1,7 @@
 import Box from './Box'
 import { LANGS } from '../lib/defaults'
 import { PROFILE_LABELS } from '../../../shared/verdict.js'
+import { key } from '../lib/keys'
 
 const PROFILE_HINTS = {
   random: 'small random tests that grow',
@@ -102,10 +103,10 @@ function RunOptionsBox({ state, set, running, canRun, blockReason, onRun, onStop
       )}
       <div className="small muted">Timeout is scaled ×3 for Python, ×4 for Java.</div>
       <button className="primary wide" data-tour="run" disabled={!canRun} onClick={onRun} title={blockReason}>
-        Run ⌘R
+        Run {key('R')}
       </button>
       <button className="wide" disabled={!running} onClick={onStop}>
-        Stop ⌘.
+        Stop {key('.')}
       </button>
       {blockReason && !running && <div className="small v-wa">{blockReason}</div>}
     </Box>

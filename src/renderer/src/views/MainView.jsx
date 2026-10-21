@@ -117,7 +117,7 @@ export default function MainView() {
     [set, state]
   )
 
-  // Native menu shortcuts (⌘R, ⌘., ⌘O) — refs keep the latest handlers.
+  // Native menu shortcuts (Run, Stop, Open, Walkthrough) — refs keep the latest handlers.
   const handlers = useRef({})
   handlers.current = { run, stop, open: () => openInto(focused), tour: () => setTour(true) }
   useEffect(() => window.api.onMenuCommand((cmd) => handlers.current[cmd]?.()), [])

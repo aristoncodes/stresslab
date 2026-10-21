@@ -10,10 +10,12 @@ export default function KeyPrompt({ onDone }) {
   const [open, setOpen] = useState(false)
   const [key, setKey] = useState('')
   const [status, setStatus] = useState(null) // { kind, text }
+  const [storage, setStorage] = useState('encrypted') // 'encrypted' | 'session' (Linux without a keyring)
 
   useEffect(() => {
     window.api.getSettings().then((s) => {
       setOpen(!s.hasKey.groq)
+      setStorage(s.keyStorage)
       if (s.hasKey.groq) onDone?.()
     })
   }, [onDone])
@@ -66,7 +68,12 @@ export default function KeyPrompt({ onDone }) {
             onKeyDown={(e) => e.key === 'Enter' && key.trim() && save()}
           />
           {status && <div className={`small ${status.kind}`}>{status.text}</div>}
-          <div className="small muted">The key is stored encrypted on this Mac only. Everything except AI spec generation works without it.</div>
+          <div className="small muted">
+            {storage === 'session'
+              ? 'No system keyring was found, so the key is kept only until you quit (it is never saved as plain text).'
+              : 'The key is stored encrypted on this computer only.'}{' '}
+            Everything except the AI features works without it.
+          </div>
           <div className="row-end">
             <button onClick={close}>Later</button>
             <button className="primary" disabled={!key.trim()} onClick={save}>

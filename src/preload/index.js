@@ -15,6 +15,9 @@ function on(channel) {
 }
 
 const api = {
+  // 'darwin' | 'win32' | 'linux': used for shortcut labels (⌘R vs Ctrl+R).
+  platform: process.platform,
+
   // Toolchains / spec
   getToolchains: invoke('toolchains:get'), // (refresh?: boolean)
   validateSpec: invoke('spec:validate'), // ({ spec, sample? }) -> { ok, line?, message?, sample }

@@ -1,5 +1,6 @@
 // App settings in <userData>/settings.json. API keys are encrypted with
-// safeStorage (macOS Keychain-backed) and never sent to the renderer.
+// safeStorage (Keychain on macOS, DPAPI on Windows, libsecret/KWallet on Linux)
+// and never sent to the renderer.
 import { app, safeStorage } from 'electron'
 import { readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
@@ -17,6 +18,15 @@ const DEFAULTS = {
 
 const file = () => join(app.getPath('userData'), 'settings.json')
 
+// Linux without a keyring only offers the 'basic_text' backend (no real
+// encryption). Then keys are kept in memory for this session and never written.
+const sessionKeys = {}
+export function keyStorage() {
+  if (!safeStorage.isEncryptionAvailable()) return 'session'
+  if (process.platform === 'linux' && safeStorage.getSelectedStorageBackend?.() === 'basic_text') return 'session'
+  return 'encrypted'
+}
+
 function load() {
   try {
     const saved = JSON.parse(readFileSync(file(), 'utf8'))
@@ -29,7 +39,11 @@ function load() {
 // Settings safe to hand to the renderer: keys replaced by "is a key saved?" flags.
 export function getPublicSettings() {
   const { keys, ...rest } = load()
-  return { ...rest, hasKey: Object.fromEntries(PROVIDERS.map((p) => [p, !!keys[p]])) }
+  return {
+    ...rest,
+    hasKey: Object.fromEntries(PROVIDERS.map((p) => [p, !!(keys[p] || sessionKeys[p])])),
+    keyStorage: keyStorage()
+  }
 }
 
 export function getSettings() {
@@ -39,20 +53,20 @@ export function getSettings() {
 // patch: any public fields, plus optional apiKey: { provider, value } ('' deletes).
 export function saveSettings(patch) {
   const s = load()
-  const { apiKey, hasKey: _ignored, ...fields } = patch
+  const { apiKey, hasKey: _k, keyStorage: _s, ...fields } = patch
   Object.assign(s, fields)
   if (apiKey && PROVIDERS.includes(apiKey.provider)) {
+    delete sessionKeys[apiKey.provider]
     if (!apiKey.value) delete s.keys[apiKey.provider]
-    else {
-      if (!safeStorage.isEncryptionAvailable()) throw new Error('Secure storage is not available on this system')
-      s.keys[apiKey.provider] = safeStorage.encryptString(apiKey.value).toString('base64')
-    }
+    else if (keyStorage() === 'session') sessionKeys[apiKey.provider] = apiKey.value
+    else s.keys[apiKey.provider] = safeStorage.encryptString(apiKey.value).toString('base64')
   }
   writeFileSync(file(), JSON.stringify(s, null, 2))
   return getPublicSettings()
 }
 
 export function getApiKey(provider) {
+  if (sessionKeys[provider]) return sessionKeys[provider]
   const enc = load().keys[provider]
   if (!enc) return ''
   try {

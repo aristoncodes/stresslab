@@ -13,8 +13,8 @@
   --tle: #b45f06;
   --ce: #555555;
   --running: #0000cc;
-  --font: Verdana, Arial, sans-serif;
-  --mono: 'SF Mono', Menlo, Consolas, monospace;
+  --font: Verdana, 'Segoe UI', Arial, 'DejaVu Sans', sans-serif;
+  --mono: 'SF Mono', Menlo, Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace;
   --fs: 13px;
   --fs-small: 11px;
   color-scheme: light dark;

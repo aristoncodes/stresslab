@@ -1,5 +1,6 @@
 import Box from './Box'
 import { langInfo } from '../lib/defaults'
+import { key } from '../lib/keys'
 import { verdictText, verdictClass, hasDetails } from '../../../shared/verdict.js'
 
 // CF "My submissions"-style table. Newest run on top; failures are clickable.
@@ -31,7 +32,7 @@ export default function StatusTable({ runs }) {
           {runs.length === 0 && (
             <tr>
               <td colSpan={7} className="muted center">
-                No runs yet. Press Run (⌘R).
+                No runs yet. Press Run ({key('R')}).
               </td>
             </tr>
           )}

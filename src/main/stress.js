@@ -1,6 +1,6 @@
 // Owns the single active stress run and its desktop side effects
 // (progress events, dock badge/progress bar, notification, failure window).
-import { app, Notification } from 'electron'
+import { app, Notification, nativeImage } from 'electron'
 import { randomInt } from 'crypto'
 import { runStress, createController, compareOutputs } from './runner.js'
 import { parseSpec, generateInput, generateTest, profileFor, SpecError } from './generator.js'
@@ -16,6 +16,32 @@ const results = new Map() // runId -> full result (kept for the failure window)
 const MAX_RESULTS = 30
 
 export const getResult = (runId) => results.get(runId) ?? null
+
+// Failure marker: dock badge (macOS), red "!" overlay on the taskbar icon
+// (Windows), launcher badge count where supported (Linux).
+function setFailureBadge(on) {
+  if (process.platform === 'darwin') app.dock?.setBadge(on ? '!' : '')
+  else if (process.platform === 'win32') getWindow('main')?.setOverlayIcon(on ? overlayIcon() : null, on ? 'Test failed' : '')
+  else app.setBadgeCount(on ? 1 : 0)
+}
+
+// 32×32 red circle with a white "!", drawn as raw BGRA pixels (no image file needed).
+let overlay = null
+function overlayIcon() {
+  if (overlay) return overlay
+  const S = 32
+  const px = Buffer.alloc(S * S * 4)
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const i = (y * S + x) * 4
+      if ((x - 15.5) ** 2 + (y - 15.5) ** 2 > 15.5 ** 2) continue // transparent outside
+      const bang = x >= 14 && x <= 17 && ((y >= 6 && y <= 19) || (y >= 23 && y <= 26))
+      px.set(bang ? [255, 255, 255, 255] : [0x2b, 0x2b, 0xd6, 255], i) // B, G, R, A
+    }
+  }
+  overlay = nativeImage.createFromBitmap(px, { width: S, height: S })
+  return overlay
+}
 
 function setDockProgress(fraction) {
   getWindow('main')?.setProgressBar(fraction) // -1 removes the bar
@@ -45,7 +71,7 @@ export async function startRun(cfg, sender) {
   const seed = Number.isInteger(cfg.seed) ? cfg.seed >>> 0 : randomInt(0, 2 ** 31)
   const controller = createController()
   active = { runId, controller }
-  app.dock?.setBadge('')
+  setFailureBadge(false)
   setDockProgress(0)
 
   const send = (channel, payload) => !sender.isDestroyed() && sender.send(channel, payload)
@@ -110,7 +136,7 @@ function locateCase(ast, r, cfg) {
 }
 
 function onFailure(result) {
-  app.dock?.setBadge('!')
+  setFailureBadge(true)
   if (result.verdict !== 'CE' && Notification.isSupported()) {
     const n = new Notification({ title: 'StressLab', body: verdictText(result) })
     n.on('click', () => openFailureWindow(result.runId))

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
+import { key } from '../lib/keys'
 
 // First-launch walkthrough: highlights each section (marked with data-tour="…")
 // and explains what to paste there. Replay from Help → Show Walkthrough.
@@ -25,7 +26,7 @@ const STEPS = [
   {
     target: 'sol',
     title: '4. Your solution',
-    text: 'Paste the code you want to test, or use Open… (⌘O). Pick C++, Python or Java from the dropdown.'
+    text: `Paste the code you want to test, or use Open… (${key('O')}). Pick C++, Python or Java from the dropdown.`
   },
   {
     target: 'brute',
@@ -40,7 +41,7 @@ const STEPS = [
   {
     target: 'run',
     title: '7. Run',
-    text: 'Press Run (⌘R). Both programs are compiled, the sample is checked, then tests run until they disagree, crash, time out, or all pass. Stop with ⌘.'
+    text: `Press Run (${key('R')}). Both programs are compiled, the sample is checked, then tests run until they disagree, crash, time out, or all pass. Stop with ${key('.')}`
   },
   {
     target: 'status',

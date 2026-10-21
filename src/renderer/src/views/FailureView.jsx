@@ -5,6 +5,9 @@ import { langInfo } from '../lib/defaults'
 import { useDarkMode, monacoTheme } from '../lib/useDarkMode'
 import { cleanError } from '../lib/errors'
 
+// Windows programs print \r\n; show plain lines so the diff has no phantom changes.
+const lf = (s) => (s ?? '').replace(/\r\n/g, '\n')
+
 const DIFF_OPTIONS = { readOnly: true, minimap: { enabled: false }, renderSideBySide: true, useInlineViewWhenSpaceIsLimited: false, scrollBeyondLastLine: false, automaticLayout: true, fontSize: 13 }
 
 // Separate window: details of one failed run (runId comes from the URL hash).
@@ -51,9 +54,9 @@ export default function FailureView({ runId }) {
           {r.input !== undefined && <InputSection r={r} />}
           {r.caseInfo && <CaseSection c={r.caseInfo} />}
           {r.verdict === 'WA' ? (
-            <DiffSection left={r.solOut} right={r.expectedOut ?? r.bruteOut} leftLabel="Output (yours)" rightLabel={r.expectedOut ? 'Expected (sample output)' : 'Expected (brute)'} message={r.message} />
+            <DiffSection left={lf(r.solOut)} right={lf(r.expectedOut ?? r.bruteOut)} leftLabel="Output (yours)" rightLabel={r.expectedOut ? 'Expected (sample output)' : 'Expected (brute)'} message={r.message} />
           ) : r.verdict === 'BRUTE_FAIL' && r.expectedOut ? (
-            <DiffSection left={r.bruteOut} right={r.expectedOut} leftLabel="Brute output" rightLabel="Expected (sample output)" message={r.message} />
+            <DiffSection left={lf(r.bruteOut)} right={lf(r.expectedOut)} leftLabel="Brute output" rightLabel="Expected (sample output)" message={r.message} />
           ) : (
             <CrashSection r={r} />
           )}

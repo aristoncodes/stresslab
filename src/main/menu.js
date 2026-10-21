@@ -7,29 +7,37 @@ import { getWindow, openSettingsWindow } from './windows.js'
 const command = (cmd) => () => getWindow('main')?.webContents.send('menu:command', cmd)
 
 export function buildMenu() {
+  const isMac = process.platform === 'darwin'
+  const settings = { label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: openSettingsWindow }
   const template = [
-    {
-      label: app.name,
-      submenu: [
-        { role: 'about' },
-        { type: 'separator' },
-        { label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: openSettingsWindow },
-        { type: 'separator' },
-        { role: 'hide' },
-        { role: 'hideOthers' },
-        { type: 'separator' },
-        { role: 'quit' }
-      ]
-    },
+    // macOS: app menu with About/Settings/Hide/Quit. Windows/Linux: those live in File/Help.
+    ...(isMac
+      ? [
+          {
+            label: app.name,
+            submenu: [
+              { role: 'about' },
+              { type: 'separator' },
+              settings,
+              { type: 'separator' },
+              { role: 'hide' },
+              { role: 'hideOthers' },
+              { type: 'separator' },
+              { role: 'quit' }
+            ]
+          }
+        ]
+      : []),
     {
       label: 'File',
       submenu: [
         { label: 'Open into Editor…', accelerator: 'CmdOrCtrl+O', click: command('open') },
+        ...(isMac ? [] : [settings]),
         { type: 'separator' },
-        { role: 'close' }
+        isMac ? { role: 'close' } : { role: 'quit', label: 'Exit' }
       ]
     },
-    // Needed for ⌘C/⌘V/⌘Z to work in text fields and editors.
+    // Needed for Copy/Paste/Undo shortcuts to work in text fields and editors.
     { role: 'editMenu' },
     {
       label: 'Run',
@@ -52,7 +60,7 @@ export function buildMenu() {
     { role: 'windowMenu' },
     {
       role: 'help',
-      submenu: [{ label: 'Show Walkthrough', click: command('tour') }]
+      submenu: [{ label: 'Show Walkthrough', click: command('tour') }, ...(isMac ? [] : [{ role: 'about' }])]
     }
   ]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
