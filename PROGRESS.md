@@ -2,10 +2,10 @@
 
 > Claude Code: update this file at the end of every phase. Tick boxes, update the percentage, and add a line to the log.
 
-**Overall: 98% (62 / 64 tasks, 1 skipped)**
+**Overall: 97% (67 / 70 tasks, 1 skipped)**
 
 ```
-[████████████████████] 98%
+[███████████████████░] 97%
 ```
 
 | Phase | Name | Tasks | Done | Status |
@@ -20,6 +20,7 @@
 | 7 | Package & submit | 5 | 4 | 🟨 In progress |
 | 8 | Extras (P2) | 2 | 1 | ✅ Done (1 ⏭) |
 | 9 | Feedback round | 12 | 12 | ✅ Done |
+| 10 | Windows + Linux (v1.1.0) | 6 | 5 | 🟨 In progress |
 
 Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 
@@ -105,6 +106,14 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 - [x] README rewritten: download link (v1.0.0 release), how-it-works steps, fresh light-theme screenshots
 - [x] AI lists "# limit name: MIN..MAX" for every constraint first; app cross-checks the spec against its own limits
 
+## Phase 10 — Windows + Linux (v1.1.0, see PRD-cross-platform.md)
+- [x] M1 engine: platform.js, per-OS toolchain detection (MinGW, py launcher, JAVA_HOME…), .exe, UTF-8, Defender warm-up; tests pass on macOS/Windows/Linux CI
+- [x] 256 MB C++ stack on every OS + deep-recursion test (segfaults without it)
+- [x] M2 desktop/UI: per-OS menus, ⌘/Ctrl labels, taskbar overlay / badge count, session-only keys without a keyring, fonts, CRLF
+- [x] M3 packaging: NSIS installer + portable zip, AppImage + .deb, icon.ico; CI package + release jobs
+- [x] M4 docs: README download table and per-OS requirements
+- [ ] Release v1.1.0 from CI (tag) with all installers
+
 ## Phase 8 — Extras (P2, only if time remains)
 - [x] Complexity: AI Big-O estimate of the solution (`complexity:estimate`)
 - [⏭] Complexity: measured timing over growing n + curve fit — built and working (O(N)/O(N log N)/O(N²)/O(N⁴) identified), then removed at the user's request (show only the AI estimate)
@@ -130,3 +139,4 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 | 2026-10-21 00:28 | 9 | built-in key reverted (user preferred each user bringing a key); startup Groq key dialog: shown when no key saved, wrong key → "HTTP 401: Invalid API Key", real key tested + saved + dialog closes; dmg rebuilt with no key (plain or masked) in app.asar |
 | 2026-10-21 00:46 | 8 | time complexity: AI estimate (Groq) returns time/space, bottleneck, ops at limits, verdict — on the mountains solution O(Σ n·m) fits, brute O(n²m²) too slow. Measured mode was built (×√2 growth, duration-weighted fit, log-factor ties) then removed per user: only the AI estimate is shown |
 | 2026-10-21 09:14 | 9 | walkthrough: shown after the key dialog on first launch, 11 steps verified to highlight the right section with the card inside the window, remembered after Finish, replay via header/Help menu. README rewritten; v1.0.0 release with the dmg (uploaded with curl after gh timed out) |
+| 2026-10-21 19:26 | 10 | Windows/Linux: engine tests pass on real macOS, Windows (MinGW g++ 15.2, py launcher, Temurin 21) and Linux (g++-14, Python 3.12, Temurin 21) CI runners, 105 checks each; deep recursion 10^6 passes on all three; per-OS menus/labels/badges/key storage; installers configured and built in CI |

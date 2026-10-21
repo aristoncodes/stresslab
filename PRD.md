@@ -34,7 +34,7 @@ Students practicing on Codeforces / CSES / LeetCode / AtCoder, on macOS.
 - Interactive problems.
 - Online judge integration / scraping.
 - Accounts, cloud sync, auto-update.
-- Windows/Linux builds (code should not block them, but only the .dmg is shipped).
+- ~~Windows/Linux builds~~ — added in v1.1.0, see [PRD-cross-platform.md](PRD-cross-platform.md).
 
 ## 5. Features
 

@@ -2,21 +2,21 @@
 
 **Find the smallest test case where your competitive programming solution is wrong.**
 
-StressLab is a macOS desktop app for *stress testing*: you give it your solution, a slow-but-correct brute force and the problem's input format, and it generates thousands of random tests (small first), runs both programs, and stops at the **first test where they disagree**, showing the input, the exact failing test case and a diff of the outputs. An AI turns the problem statement into a test generator for you.
+StressLab is a desktop app for macOS, Windows and Linux for *stress testing*: you give it your solution, a slow-but-correct brute force and the problem's input format, and it generates thousands of random tests (small first), runs both programs, and stops at the **first test where they disagree**, showing the input, the exact failing test case and a diff of the outputs. An AI turns the problem statement into a test generator for you.
 
-![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-black?logo=apple) ![Electron](https://img.shields.io/badge/Electron-44-47848F?logo=electron) ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black) ![Languages](https://img.shields.io/badge/tests-C%2B%2B%20%C2%B7%20Python%20%C2%B7%20Java-orange)
+![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-black?logo=apple) ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows) ![Linux](https://img.shields.io/badge/Linux-x64-FCC624?logo=linux&logoColor=black) [![build](https://github.com/aristoncodes/stresslab/actions/workflows/build.yml/badge.svg)](https://github.com/aristoncodes/stresslab/actions/workflows/build.yml) ![Electron](https://img.shields.io/badge/Electron-44-47848F?logo=electron) ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black) ![Languages](https://img.shields.io/badge/tests-C%2B%2B%20%C2%B7%20Python%20%C2%B7%20Java-orange)
 
 Built with Electron for the *Application Development — Desktop Application* course project.
 
 ## Download
 
-**[⬇ Download StressLab 1.0.0 for macOS (Apple Silicon, .dmg)](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-1.0.0-arm64.dmg)** · [all releases](https://github.com/aristoncodes/stresslab/releases)
+| OS | Download | First launch |
+|---|---|---|
+| **macOS** (Apple Silicon) | [⬇ StressLab-1.1.0-arm64.dmg](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-1.1.0-arm64.dmg) | Drag to Applications, then **right-click → Open** the first time (unsigned app), or run `xattr -cr /Applications/StressLab.app` |
+| **Windows** 10/11 (x64) | [⬇ Installer (.exe)](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-Setup-1.1.0-x64.exe) · [portable .zip](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-1.1.0-x64-portable.zip) | SmartScreen may warn (unsigned): **More info → Run anyway** |
+| **Linux** (x64) | [⬇ .deb (Ubuntu/Debian)](https://github.com/aristoncodes/stresslab/releases/latest/download/stresslab_1.1.0_amd64.deb) · [AppImage (any distro)](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-1.1.0-x86_64.AppImage) | `.deb`: `sudo apt install ./stresslab_1.1.0_amd64.deb`. AppImage: `chmod +x StressLab-*.AppImage`; on Ubuntu 22.04+ it may need `sudo apt install libfuse2` |
 
-1. Open the .dmg and drag **StressLab** to **Applications**.
-2. The app is not signed, so the first time **right-click StressLab → Open → Open** (or run `xattr -cr /Applications/StressLab.app`).
-3. On first launch the app asks for a free [Groq API key](https://console.groq.com/keys) (only needed for the AI features) and then walks you through the app.
-
-You also need the compilers for the languages you use: see [Requirements](#requirements).
+[All releases](https://github.com/aristoncodes/stresslab/releases). On first launch the app asks for a free [Groq API key](https://console.groq.com/keys) (only needed for the AI features) and then walks you through the app. You also need the compilers for the languages you use: see [Requirements](#requirements).
 
 ## Screenshots
 
@@ -58,28 +58,31 @@ Example: an `int` array sum passes all 200 *Random* tests and fails on test 3 wi
 
 ## Features
 
-- **Three languages, mixed freely**: C++ (Homebrew `g++-NN` preferred, Apple Clang fallback, `bits/stdc++.h` shim included), Python 3, Java (real JDK found via `/usr/libexec/java_home`). Missing or broken toolchains are shown with the install command.
+- **Three languages, mixed freely**: C++ (GCC/MinGW-w64 or Apple Clang, `bits/stdc++.h` shim included, 256 MB stack), Python 3, Java. Toolchains are detected per OS (Homebrew, MSYS2/WinLibs, `py` launcher, `JAVA_HOME`, `/usr/lib/jvm`, …); missing or broken ones are shown with the install command.
 - **AI spec from the statement** with Groq (default), Gemini (falls back to `flash-lite` when busy) or local Ollama; validated by the parser, the limits it listed and the sample, with up to 2 automatic retries.
 - **Spec language** (below) with a seeded generator, line-numbered errors and small-first growth, or bring your own generator program in any language.
 - **Codeforces-style verdicts**: *Accepted*, *Wrong answer on test N / on sample*, *Time limit exceeded*, *Runtime error*, *Compilation error*, *Brute failed*.
 - **Failure popup** (a sheet attached to the main window; Close or Esc): test number, generator and seed, input, failing test case, Monaco diff, stderr and exit code; Copy, Save as .txt, Show in Finder.
 - **AI time-complexity estimate** for your solution.
-- **Desktop integration**: native menu and shortcuts (⌘O ⌘R ⌘. ⌘,), notifications, dock badge and progress bar, open/save dialogs, clipboard, first-launch walkthrough.
-- **Secure by design**: sandboxed renderer, all system work in the main process, API keys encrypted with the macOS Keychain (`safeStorage`) and never shown to the page.
+- **Desktop integration** on all three OSes: native menu and shortcuts (⌘/Ctrl + O, R, ., ,), notifications, failure badge (dock on macOS, taskbar overlay on Windows, launcher badge on Linux), taskbar/dock progress bar, open/save dialogs, clipboard, first-launch walkthrough.
+- **Secure by design**: sandboxed renderer, all system work in the main process, API keys encrypted by the OS (`safeStorage`) and never shown to the page.
 
 ## Requirements
 
-| Tool | Needed for | Install |
-|---|---|---|
-| macOS on Apple Silicon | the `.dmg` (arm64) | — |
-| Xcode Command Line Tools | C++ (Clang fallback, linker) | `xcode-select --install` |
-| Homebrew GCC *(recommended)* | C++ with real `g++` | `brew install gcc` |
-| Python 3 | Python programs | `brew install python` |
-| JDK 11+ | Java programs | `brew install openjdk` (then follow brew's `sudo ln -sfn …` hint so `java_home` finds it) |
-| Groq API key *(free, optional)* | AI spec and complexity | [console.groq.com/keys](https://console.groq.com/keys) |
-| Node.js 20+ | building from source | `brew install node` |
+The app finds compilers by itself (also outside PATH) and shows the exact install command for anything missing.
 
-> If C++ shows **broken**, your linker and SDK are out of sync (seen with an older Xcode.app selected). Fix with
+| | macOS | Windows | Linux (Ubuntu/Debian) |
+|---|---|---|---|
+| **C++** | `xcode-select --install` or `brew install gcc` | MinGW-w64 g++: [MSYS2](https://www.msys2.org), then `pacman -S mingw-w64-ucrt-x86_64-gcc` (WinLibs, Chocolatey `mingw` and Code::Blocks' MinGW also work) | `sudo apt install build-essential` |
+| **Python 3** | `brew install python` | [python.org](https://www.python.org) or `winget install Python.Python.3.12` (the Microsoft Store alias is skipped) | `sudo apt install python3` |
+| **Java (JDK 11+)** | `brew install openjdk` | `winget install EclipseAdoptium.Temurin.21.JDK` | `sudo apt install openjdk-21-jdk` |
+| **Groq key** *(optional)* | [console.groq.com/keys](https://console.groq.com/keys) | same | same |
+
+- C++ programs get a **256 MB stack** on every OS (deep recursion works like on Codeforces).
+- API keys are encrypted by the OS: Keychain (macOS), DPAPI (Windows), libsecret/KWallet (Linux). On Linux without a keyring the key is kept only until you quit.
+- Shortcuts use **⌘** on macOS and **Ctrl** on Windows/Linux (Run ⌘R / Ctrl+R, Stop ⌘. / Ctrl+., Open ⌘O / Ctrl+O, Settings ⌘, / Ctrl+,).
+
+> macOS: if C++ shows **broken**, your linker and SDK are out of sync (older Xcode.app selected). Fix with
 > `sudo xcode-select -s /Library/Developer/CommandLineTools`, update Xcode, or `brew install gcc`.
 
 ## Try the demos
@@ -142,9 +145,13 @@ repeat t {
 ```bash
 npm install
 npm run dev          # run the app with hot reload
-npm test             # 82 spec-language checks + 21 engine checks (no UI)
-npm run build:mac    # → dist/StressLab-1.0.0-arm64.dmg
+npm test             # 82 spec-language checks + 23 engine checks (no UI)
+npm run build:mac    # → dist/StressLab-1.1.0-arm64.dmg
+npm run build:win    # → dist/StressLab-Setup-1.1.0-x64.exe + portable .zip (on Windows)
+npm run build:linux  # → dist/StressLab-1.1.0-x86_64.AppImage + .deb (on Linux)
 ```
+
+**CI** ([`.github/workflows/build.yml`](.github/workflows/build.yml)): every push runs `npm test` on real macOS, Windows and Linux machines with g++, Python and Java. A `v*` tag builds all installers natively and attaches them to the GitHub release.
 
 ## Architecture
 
@@ -163,7 +170,9 @@ npm run build:mac    # → dist/StressLab-1.0.0-arm64.dmg
 │ menu.js  (⌘O ⌘R ⌘. ⌘, Help)       │          └─ child_process.spawn           │
 │ settings.js (safeStorage keys)    ├─ generator.js (spec → tests, sample check) │
 │ llm.js (fetch: Groq/Gemini/Ollama)├─ compilers.js / toolchains.js (detection)  │
-│                                   └─ languages.js (C++/Python/Java table)      │
+│                                   ├─ languages.js (C++/Python/Java table)      │
+│                                   └─ platform.js  (all macOS/Windows/Linux     │
+│                                                    differences in one place)   │
 └────────────────────────────────┬───────────────────────────────────────────────┘
                                  ▼
      <tmp>/stresslab/<runId>/{solution,brute,generator}/   (deleted after the run)
@@ -207,8 +216,9 @@ npm run build:mac    # → dist/StressLab-1.0.0-arm64.dmg
 | `Menu` (app, File, Edit, Run, View, Window, Help + accelerators) | `menu.js` |
 | `clipboard` | copy the failing input / test case |
 | `shell.openPath` / `showItemInFolder` / `openExternal` | saved files, external links |
-| `safeStorage` | encrypt API keys in `userData/settings.json` |
-| `app.dock.setBadge` + `BrowserWindow.setProgressBar` | dock badge `!` on failure, progress bar while running |
+| `safeStorage` | encrypt API keys in `userData/settings.json` (Keychain / DPAPI / libsecret) |
+| `app.dock.setBadge` / `BrowserWindow.setOverlayIcon` / `app.setBadgeCount` | failure badge on macOS / Windows / Linux |
+| `BrowserWindow.setProgressBar` | dock / taskbar progress while running |
 | `app.getPath('userData')`, `process.resourcesPath` | settings file, bundled `bits/stdc++.h` |
 | `child_process.spawn` | compile and run programs (timeouts, kill on Stop) |
 | `fetch` (Node built-in) | Groq / Gemini / Ollama HTTP APIs |
@@ -219,7 +229,7 @@ npm run build:mac    # → dist/StressLab-1.0.0-arm64.dmg
 
 ```
 src/main/          index · windows · menu · ipc · stress · runner · languages · compilers
-                   toolchains · generator · llm · settings · paths
+                   toolchains · generator · llm · settings · paths · platform
 src/preload/       contextBridge API (window.api)
 src/renderer/src/  React app: views/ (Main, Failure, Settings), components/, lib/
 src/shared/        verdict wording shared by main and renderer
@@ -227,6 +237,7 @@ resources/include/ bits/stdc++.h shim
 samples/           maxsub · multitest · overflow demo problems
 scripts/           gen-test.mjs (spec language) · smoke.mjs (engine)
 docs/screenshots/  README images
+.github/workflows/  CI: tests on macOS/Windows/Linux, installers, releases
 ```
 
-Project documents: [PRD.md](PRD.md) (features and scope), [DESIGN.md](DESIGN.md) (UI), [PROGRESS.md](PROGRESS.md) (build log).
+Project documents: [PRD.md](PRD.md) (features and scope), [PRD-cross-platform.md](PRD-cross-platform.md) (Windows/Linux), [DESIGN.md](DESIGN.md) (UI), [PROGRESS.md](PROGRESS.md) (build log).
