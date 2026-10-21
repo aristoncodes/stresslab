@@ -1,6 +1,6 @@
 # PRD — StressLab for Windows and Linux
 
-**Status:** Draft for approval · **Date:** 2026-10-21 · **Owner:** aristoncodes
+**Status:** Approved · **Date:** 2026-10-21 · **Owner:** aristoncodes
 **Builds on:** [PRD.md](PRD.md) (v1.0, macOS) · **Goal release:** v1.1.0
 
 ---
@@ -165,10 +165,10 @@ A build passes when, on each OS:
 | M3 | Packaging + CI release | X20–X26 | All installers built by CI and attached to a test release |
 | M4 | Docs + release v1.1.0 | X28–X29 | README download table live; acceptance list passed on all 3 OSes |
 
-## 10. Open questions (need a decision)
+## 10. Decisions (2026-10-21)
 
-1. **Package formats:** Windows installer + portable zip, and Linux AppImage + `.deb` (recommended), or fewer?
-2. **CI:** OK to add GitHub Actions to the repo? (Unlimited for public repos; limited minutes while private.)
-3. **Architectures:** x64 only (recommended), or also arm64 for Windows/Linux?
-4. **Version:** release as **v1.1.0** with all three OSes (recommended), keeping v1.0.0 as the macOS-only release?
-5. **VM testing:** will you install a Windows 11 / Ubuntu VM for the final smoke test, or is CI testing enough for the submission?
+1. **Package formats:** all four: Windows NSIS installer + portable zip; Linux AppImage + `.deb`.
+2. **CI:** add GitHub Actions (build + test on macOS, Windows and Linux runners; attach installers on `v*` tags).
+3. **Architectures:** x64 only for Windows and Linux (macOS stays arm64).
+4. **Version:** new **v1.1.0** release with all three OSes; v1.0.0 stays as the macOS-only release.
+5. **Testing:** CI tests on the real OSes are required; a manual VM smoke test is optional.
