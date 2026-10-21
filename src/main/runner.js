@@ -2,19 +2,17 @@
 // (see scripts/smoke.mjs).
 import { spawn } from 'child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'fs'
-import { join } from 'path'
+import { join, sep } from 'path'
 import { tmpdir } from 'os'
 import { LANGUAGES, DEFAULT_CPP_FLAGS } from './languages.js'
+import { isWin, childEnv } from './platform.js'
 
 const MAX_OUTPUT = 1024 * 1024 // per stream; more than this is killed as "output limit"
 const COMPILE_TIMEOUT_MS = 60000
 
-// Apps launched from Finder get a minimal PATH; compilers need e.g. `ld` and `as`.
-const STD_PATH = ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin', '/usr/sbin', '/sbin']
-const CHILD_ENV = {
-  ...process.env,
-  PATH: [...new Set([...(process.env.PATH ?? '').split(':').filter(Boolean), ...STD_PATH])].join(':')
-}
+// Apps launched from Finder/Explorer get a minimal PATH; compilers need e.g. `ld`
+// and `as`, and MinGW needs its own bin folder for DLLs (see platform.js).
+const CHILD_ENV = childEnv()
 
 // A Stop handle shared by everything in one run: kills every live child process.
 export function createController() {
@@ -29,7 +27,8 @@ export function createController() {
 }
 
 // Run one process with piped stdin, a hard timeout and capped output. Never rejects.
-export function runProcess({ cmd, args = [], cwd, input = '', timeoutMs, controller }) {
+// extraPath: directories put first on PATH for this process.
+export function runProcess({ cmd, args = [], cwd, input = '', timeoutMs, controller, extraPath }) {
   return new Promise((resolve) => {
     const start = performance.now()
     const out = { stdout: '', stderr: '' }
@@ -37,7 +36,7 @@ export function runProcess({ cmd, args = [], cwd, input = '', timeoutMs, control
     let outputLimit = false
     let spawnError = null
 
-    const child = spawn(cmd, args, { cwd, env: CHILD_ENV, stdio: ['pipe', 'pipe', 'pipe'] })
+    const child = spawn(cmd, args, { cwd, env: extraPath?.length ? childEnv(extraPath) : CHILD_ENV, stdio: ['pipe', 'pipe', 'pipe'] })
     controller?.children.add(child)
 
     const collect = (stream) => (chunk) => {
@@ -91,21 +90,27 @@ export async function compileProgram({ role, lang, code, runDir, toolchains, inc
 
   const opts = { cppFlags: cppFlags ?? DEFAULT_CPP_FLAGS, includeDir }
   const { cmd, args } = L.compile(toolchains, dir, file, opts)
-  const r = await runProcess({ cmd, args, cwd: dir, timeoutMs: COMPILE_TIMEOUT_MS, controller })
+  const extraPath = tc.binDir ? [tc.binDir] : []
+  const r = await runProcess({ cmd, args, cwd: dir, timeoutMs: COMPILE_TIMEOUT_MS, controller, extraPath })
   if (r.code !== 0) {
     // Show "main.cpp:3:5: error…" instead of the long temp-dir path.
-    const stderr = (r.error || r.stderr || (r.timedOut ? 'Compilation timed out' : 'Compilation failed')).replaceAll(dir + '/', '')
+    const stderr = (r.error || r.stderr || (r.timedOut ? 'Compilation timed out' : 'Compilation failed')).replaceAll(dir + sep, '')
     return { ok: false, stderr }
   }
-  return { ok: true, lang, timeScale: L.timeScale, run: { ...L.run(toolchains, dir, code), cwd: dir } }
+  const run = { ...L.run(toolchains, dir, code), cwd: dir, extraPath }
+  // Windows Defender scans a freshly built .exe on its first launch (can take ~1 s);
+  // do that launch now so it isn't counted against test 1's time limit.
+  if (isWin && lang === 'cpp') await runProcess({ ...run, input: '', timeoutMs: 15000, controller })
+  return { ok: true, lang, timeScale: L.timeScale, run }
 }
 
 function runCompiled(program, input, baseTimeoutMs, controller, extraArgs = []) {
-  const { cmd, args, cwd } = program.run
+  const { cmd, args, cwd, extraPath } = program.run
   return runProcess({
     cmd,
     args: [...args, ...extraArgs],
     cwd,
+    extraPath,
     input,
     timeoutMs: baseTimeoutMs * program.timeScale,
     controller

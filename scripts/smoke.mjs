@@ -128,7 +128,9 @@ r = await run({ sol: { lang: 'python', code: 'while True: pass' }, brute, contro
 check('Stop → STOPPED promptly', r.verdict === 'STOPPED' && performance.now() - t < 3000, `${Math.round(performance.now() - t)} ms`)
 
 // 8. Output cap
-const big = await runProcess({ cmd: '/bin/sh', args: ['-c', 'yes'], timeoutMs: 5000 })
+// Endless output from a tiny Node program (portable replacement for `yes`); writeSync
+// blocks on the pipe like `yes` does instead of buffering in memory.
+const big = await runProcess({ cmd: process.execPath, args: ['-e', 'const s = "y\\n".repeat(4096); for (;;) require("fs").writeSync(1, s)'], timeoutMs: 5000 })
 check('output over 1 MB is killed', big.outputLimit && big.stdout.length <= 1024 * 1024)
 
 console.log(failures ? `\n${failures} check(s) failed` : '\nAll smoke checks passed')
