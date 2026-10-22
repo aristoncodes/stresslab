@@ -1,7 +1,7 @@
 // Preload runs sandboxed: only `electron` can be required here.
 // The renderer gets exactly the functions below as `window.api` — no raw
 // ipcRenderer, no Node. Each maps to one named channel in src/main/ipc.js.
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
 const invoke = (channel) => (arg) => ipcRenderer.invoke(channel, arg)
 
@@ -65,6 +65,24 @@ const api = {
   onWsChanged: on('ws:changed'), // ([relPath]) changed by other programs
   buildRun: invoke('build:run'), // ({ path }) -> { stdout, stderr, exitCode, runMs, seconds, inputFile, outputFile, compileError? }
   buildStop: invoke('build:stop'),
+  wsHexdump: invoke('ws:hexdump'), // (relPath) -> hex dump text
+  wsReadEncoding: invoke('ws:readEncoding'), // ({ path, encoding }) -> text
+  wsWriteEncoding: invoke('ws:writeEncoding'), // ({ path, text, encoding })
+  gitStatus: invoke('git:status'), // () -> { branch, files: { relPath: status } } | null
+  gitDiff: invoke('git:diff'), // ({ path, text }) -> [{ kind, from, to }]
+  // Drag & drop from Finder/Explorer: the File's real path, then open it.
+  wsOpenDropped: (file) => ipcRenderer.invoke('ws:openDropped', webUtils.getPathForFile(file)),
+  wsOpenRecent: invoke('ws:openRecent'), // (index) -> folder
+  wsSaveAs: invoke('ws:saveAs'), // ({ text, suggested }) -> { path } | { outside } | null
+  wsSearch: invoke('ws:search'), // ({ query, regex, caseSensitive, wholeWord, where }) -> { results, files, truncated }
+  wsReplace: invoke('ws:replace'), // (same + replacement) -> { files, replacements }
+  userList: invoke('user:list'), // User folder (snippets, macros, settings, session)
+  userRead: invoke('user:read'),
+  userWrite: invoke('user:write'),
+  userReveal: invoke('user:reveal'),
+  readClipboard: invoke('clipboard:readText'),
+  setFullScreen: invoke('win:fullscreen'), // (on?) -> isFullScreen
+  setMode: invoke('ui:mode'), // ({ mode, macros? }) -> rebuilds the menu bar
   contextMenu: invoke('ui:contextMenu'), // ([{ id, label } | { type: 'separator' }]) -> id | null
   confirm: invoke('ui:confirm'), // ({ message, detail, buttons }) -> button index
 

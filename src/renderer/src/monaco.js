@@ -10,6 +10,9 @@ self.MonacoEnvironment = {
 
 loader.config({ monaco })
 
+// The editor creates and manages its own models, so it needs Monaco directly.
+export { monaco }
+
 // Sublime Text 4's default "Mariana" colour scheme, used by the editor and the
 // stress tester's code panes.
 monaco.editor.defineTheme('stresslab-mariana', {

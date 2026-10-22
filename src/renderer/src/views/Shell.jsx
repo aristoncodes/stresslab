@@ -28,6 +28,8 @@ export default function Shell() {
     } catch {
       /* ignore */
     }
+    // The editor rebuilds its own (Sublime) menu bar with the saved macros when it becomes active.
+    if (mode === 'stress') window.api.setMode({ mode })
   }, [mode])
 
   useEffect(

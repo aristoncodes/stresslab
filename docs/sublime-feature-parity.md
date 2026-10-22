@@ -1,29 +1,26 @@
 # Sublime Text 4 vs StressLab Editor — feature parity
 
-Checked on 2026-10-21 against StressLab `main` (commit 0c910c9). The editor is built on **Monaco**, VS Code's editor engine; its 130 built-in commands were listed from the running app (F1 palette) and compared with Sublime Text 4's feature list.
+Updated 2026-10-22 after the "everything Sublime" rebuild (v1.2.0 work). First checked on 2026-10-21 against commit 0c910c9. The editor is built on **Monaco** (VS Code's editor engine). Every Sublime menu command lives in one table, [src/shared/editorCommands.js](../src/shared/editorCommands.js). That table drives the native menu bar, the key bindings and the Command Palette.
 
 **Legend**
-- ✅ **Have:** works today.
-- 🔑 **Have, different key:** the command exists in Monaco but isn't on Sublime's shortcut. A one-line key binding fixes it.
-- ➕ **Missing, worth adding:** useful for competitive programming; can be built.
-- ⛔ **Not planned:** not possible in this architecture, or not worth it for a CP editor (reason given).
+- ✅ **Have:** works, on Sublime's menu location and key.
+- 🟨 **Approximation:** works, but behaves a little differently from Sublime (the difference is described).
+- ⛔ **Not possible / not planned:** reason given.
 
 ## Summary
 
 | Area | Verdict |
 |---|---|
-| 1. Core / platform | Cross-platform, auto-reload, portable ✅ · hot exit, auto-save ➕ · native speed, multi-window ⛔ |
-| 2. Editing | **Strongest area**: multi-cursor, line ops, folding, case/sort/trim ✅ · ~14 commands only need Sublime's keys 🔑 · bookmarks, clipboard history, shuffle/swap case ➕ · macros, spell check, HTML tags ⛔ |
-| 3. Navigation | Goto Line, editor command palette ✅ · Goto Anything, symbols, app Command Palette, jump back ➕ · definitions/hover (need language servers) ⛔ |
-| 4. Search & replace | In-file find/replace complete ✅ · Find/Replace in Files ➕ |
-| 5. Auto-complete & snippets | Word completion, fuzzy, snippet engine ✅ · actual snippets ➕ · API completions ⛔ |
-| 6. Projects, sidebar, files | Sidebar file ops, Save All ✅ · reopen closed tab, revert, recent menu, find in folder, drag-in ➕ · projects, Git, encodings, hex ⛔ |
-| 7. Interface & layout | Minimap, guides, full screen, modified tabs ✅ · free splits, tab menu, distraction-free, rulers, wrap ➕ |
-| 8. Syntax & themes | Many languages, Mariana, Adaptive-style UI ✅ · more schemes/light ➕ · Sublime resource formats ⛔ |
-| 9. Build systems | ⌘B, panel, error marks, cancel, save-before-build ✅ · clickable errors, variants ➕ · custom `.sublime-build` ⛔ |
-| 10–13. Customization, CLI, plugins | Settings subset, CLI ➕ · keymaps, plugin API, packages ⛔ |
-
-Most of Sublime's **editing** core is already there (multi-cursor, line operations, folding, find/replace, case transforms, sort). The biggest gaps are **navigation** (Goto Anything, Command Palette for app commands, symbol jump), **layout** (free split layouts, tab menus) and **file management** (reopen closed tab, revert, find in files, hot exit). Sublime's **plugin/package ecosystem** has no equivalent and isn't planned.
+| 1. Core / platform | Cross-platform, auto-reload, hot exit, save on focus lost ✅ · native speed, multi-window ⛔ |
+| 2. Editing | Multi-cursor, line ops, folding, case/sort/permute, swap case, wrap paragraph, bookmarks, mark/yank, paste history, paste and indent, macros ✅ · spell check, HTML tags ⛔ |
+| 3. Navigation | Goto Anything (`@` `:` `#`, live preview), Goto Symbol / in Project, Goto Definition / Reference 🟨, jump back/forward, next modification, Command Palette ✅ |
+| 4. Search & replace | In-file find ✅ · Find / Replace in Files with Where filter, results panel, F4 ✅ |
+| 5. Snippets | Sublime's built-in C/C++, Python and Java snippets + CP snippets, user `.sublime-snippet` files, New Snippet ✅ |
+| 6. Files & sidebar | Preview tabs, reopen closed, revert, Save As, recent folders, drag in, duplicate/copy path/find in folder, file icons, exclude patterns, Git badges/gutter/branch, encodings, hex view ✅ · multiple root folders, `.sublime-project` ⛔ |
+| 7. Layout | Columns/rows/grid layouts, focus/move group, clone file, tab drag between groups, tab menu, distraction free, rulers, wrap ✅ |
+| 8. Themes | Mariana ✅ · Monokai, Breakers, Celeste, Sixteen 🟨 · `.sublime-color-scheme` files ⛔ |
+| 9. Build | ⌘B, Build With variants, build system menu, clickable errors, F4, cancel ✅ · custom `.sublime-build` files ⛔ |
+| 10–13. Customization | Sublime-named JSON settings (Default \| User side by side) ✅ · command line `subl`, keymap files, plugins/packages ⛔ |
 
 ---
 
@@ -31,228 +28,141 @@ Most of Sublime's **editing** core is already there (multi-cursor, line operatio
 
 | Sublime feature | Status | StressLab |
 |---|---|---|
-| Native C++ app, custom UI toolkit | ⛔ | Electron (web technologies); can't be changed without a rewrite |
-| Very fast startup, low memory, huge files | ⛔ | Electron start-up ~1 s; files capped at 5 MB |
-| Windows, macOS, Linux | ✅ | v1.1.0: macOS arm64, Windows x64, Linux x64 |
-| Linux ARM64, macOS Intel | ➕ | CI can add arm64/x64 targets |
-| GPU-accelerated rendering | ✅ | Chromium/Monaco render on the GPU |
-| HiDPI / dark mode | ✅ | |
-| Portable mode (Windows) | ✅ | portable .zip |
-| Installers, package managers | ✅ | installers + .deb/AppImage (no Homebrew/apt repo) |
-| Stable/Dev channels, licence nag | ⛔ | not applicable |
-| Multi-window, drag files between windows | ⛔ | one main window by design |
-| Hot exit (unsaved work restored) | ➕ | planned (PRD R22) |
+| Native C++ app, custom UI toolkit | ⛔ | Electron; would need a full rewrite |
+| Very fast startup, huge files | ⛔ | ~1 s start; files capped at 5 MB |
+| Windows, macOS, Linux | ✅ | macOS arm64, Windows x64, Linux x64 |
+| Hot exit (unsaved work restored) | ✅ | `hot_exit` setting; tabs, layout and unsaved text come back on restart |
 | Auto-reload on external change | ✅ | clean buffers reload; dirty ones ask |
-| Auto-save on focus loss | ➕ | planned (PRD R24) |
+| Save on focus lost | ✅ | `save_on_focus_lost` |
+| Multi-window (File → New Window) | ⛔ | one main window; the menu item is removed |
+| `subl` command-line tool | ⛔ | not built yet |
 
 ## 2. Editing
 
 | Sublime feature | Status | StressLab |
 |---|---|---|
-| Multiple cursors / selections | ✅ | |
-| Ctrl+D next occurrence | ✅ | "Add Selection to Next Find Match" |
-| Ctrl+K, Ctrl+D skip occurrence | ✅ | "Move Last Selection to Next Find Match" |
-| Alt+F3 / ⌃⌘G select all occurrences | ✅ | bound by StressLab |
-| Ctrl+Alt+Up/Down add cursor above/below | 🔑 | "Add Cursor Above/Below" (Monaco: ⌥⌘↑/↓) |
-| Ctrl+Click adds a cursor | 🔑 | Monaco uses Alt+Click; one setting (`multiCursorModifier`) |
-| Column selection (Shift+right-drag / middle drag) | 🔑 | Monaco: Shift+Alt+drag |
-| Ctrl+Shift+L split selection into lines | ✅ | bound by StressLab |
-| Paste lines into multiple cursors | ✅ | spreads one line per cursor |
-| Undo/redo selection (Ctrl+U / Ctrl+Shift+U) | ✅ | "Cursor Undo/Redo" |
-| Ctrl+L select line | ✅ | "Expand Line Selection" |
-| Ctrl+Shift+M select inside brackets | 🔑 | "Select to Bracket" |
-| Ctrl+Shift+Space expand selection to scope | 🔑 | "Expand Selection" (Monaco: ⌃⇧⌘→) |
-| Ctrl+Shift+J expand to indentation | ➕ | small custom command |
-| Select to tag / Ctrl+Shift+A | ⛔ | HTML-only; not relevant to CP |
-| Ctrl+Shift+D duplicate line | ✅ | bound by StressLab |
-| Ctrl+Shift+K delete line | ✅ | |
-| Move line up/down | ✅ | bound by StressLab |
-| Ctrl+J join lines | ✅ | bound by StressLab |
-| Ctrl+Enter / Ctrl+Shift+Enter insert line after/before | ✅ | |
-| Copy/cut whole line with no selection | ✅ | |
-| Ctrl+K, Ctrl+K delete to end of line | 🔑 | "Delete All Right" |
-| Ctrl+K, Ctrl+Backspace delete to start | 🔑 | "Delete All Left" |
-| Ctrl+T transpose | 🔑 | "Transpose Letters" |
-| Sort lines (F9), case-sensitive sort | 🔑 | "Sort Lines Ascending/Descending" |
-| Permute lines: reverse / unique / shuffle | ✅ / ✅ / ➕ | "Reverse lines", "Delete Duplicate Lines"; shuffle missing |
-| Upper/lower/title case | ✅ | + camel/snake/kebab/Pascal |
-| Swap case | ➕ | small custom command |
-| Wrap paragraph at ruler (Alt+Q) | ➕ | small custom command |
-| Convert indentation tabs ↔ spaces | ✅ | |
-| Trim trailing whitespace | ✅ | |
-| Ensure newline at end of file | ✅ | "Insert Final New Line" (not automatic on save yet) |
-| Line-ending conversion | ➕ | model EOL switch + status-bar picker |
-| Mark / kill ring (Emacs) | ⛔ | niche |
-| Clipboard history (Ctrl+K, Ctrl+V) | ➕ | small history list |
-| Paste and indent (Ctrl+Shift+V) | 🔑 | "Reindent Selected Lines" after paste |
-| Drag and drop text | ✅ | |
-| Auto-indent, smart indent, detect indentation | ✅ | |
-| Tab size / translate tabs to spaces | ✅ | |
-| Indent / unindent (Ctrl+] / Ctrl+[) | ✅ | |
-| Auto-pair brackets and quotes | ✅ | |
-| Close tag (Alt+.) | ⛔ | HTML-only |
-| Bracket matching highlight | ✅ | + bracket-pair colours |
-| Ctrl+M jump to matching bracket | 🔑 | "Go to Bracket" |
-| Line comment Ctrl+/ | ✅ | |
-| Block comment Ctrl+Shift+/ | 🔑 | "Toggle Block Comment" |
-| Fold / unfold (Ctrl+Shift+[ / ]) | 🔑 | "Fold / Unfold" (Monaco: ⌥⌘[ / ]) |
-| Fold level 1–9 (Ctrl+K, Ctrl+1…9) | ✅ | levels 1–7 |
-| Unfold all (Ctrl+K, Ctrl+0) | 🔑 | "Unfold All" (Monaco: ⌘K ⌘J) |
-| Fold selection | ✅ | "Create Folding Range from Selection" |
-| Gutter fold arrows | ✅ | |
-| Bookmarks (Ctrl+F2, F2, Shift+F2, clear, select all) | ➕ | gutter decorations + commands |
-| Full undo/redo | ✅ | |
-| Soft undo | ✅ | "Cursor Undo" covers selection steps |
-| Persistent per-file undo history | ➕ | with hot exit |
-| Spell checking (F6) | ⛔ | not useful for code |
-| Macros (record / play / save) | ⛔ | niche; multi-cursor covers most uses |
+| Multiple cursors, ⌘D, ⌘K ⌘D, ⌃⌘G, ⌘⇧L | ✅ | Sublime keys |
+| ⌘-click adds a cursor, ⌃⇧↑/↓ add line | ✅ | |
+| Column selection | 🟨 | Shift+Alt+drag (Monaco), not middle-drag |
+| ⌘L, ⌘⇧M, ⌘⇧J, ⌘⇧Space expand selection | ✅ | to line / brackets / indentation / scope |
+| Expand to paragraph, single selection, invert selection | ✅ | |
+| Duplicate, delete, move, join lines, insert line before/after | ✅ | |
+| ⌘K ⌘K / ⌘K ⌘⌫ delete to end/start, ⌃T transpose | ✅ | |
+| Sort (F5 / ⌃F5), permute lines: reverse, unique, shuffle | ✅ | whole file when nothing is selected |
+| Permute selections | ✅ | |
+| Upper / lower / title / swap case | ✅ | |
+| Wrap paragraph at ruler (⌘⌥Q) | ✅ | keeps indentation and comment prefix |
+| Mark: set / select / delete / swap / clear, yank (⌘K ⌘Space …) | 🟨 | Swap with Mark moves the caret to the mark and sets a new mark at the old caret |
+| Paste and indent (⌘⇧V), paste from history (⌘K ⌘V) | ✅ | history keeps the last 15 copies |
+| Bookmarks (⌘F2, F2, ⇧F2, clear, select all) | ✅ | gutter markers |
+| Line comment, block comment, fold / unfold, fold levels | ✅ | |
+| Indentation: spaces/tabs, tab width, convert, guess from buffer | ✅ | also clickable in the status bar |
+| Line endings Unix / Windows | ✅ | View menu + status bar |
+| Macros: record (⌃Q), play (⌃⇧Q), save, Tools → Macros | 🟨 | records keystrokes and commands; IME/composed input isn't recorded |
+| Spell check, HTML tag commands | ⛔ | not useful for CP |
 
 ## 3. Navigation
 
 | Sublime feature | Status | StressLab |
 |---|---|---|
-| Goto Anything (Ctrl+P) fuzzy file search | ➕ | planned (PRD R14) |
-| `@symbol`, `:line`, `#text` modifiers, live preview | ➕ | with Goto Anything |
-| Goto Symbol (Ctrl+R) | ➕ | needs a symbol list: regex-based for C++/Python/Java functions |
-| Goto Symbol in Project (Ctrl+Shift+R) | ➕ | same index across files |
-| Goto Line (Ctrl+G) | ✅ | |
-| Goto Definition / References (F12) | ⛔ | needs language servers (clangd/pyright/jdtls) — PRD non-goal |
-| Hover popups for definitions | ⛔ | same |
-| Jump back / forward | ➕ | cursor-history stack |
-| Next / previous modification | ➕ | needs diff against saved text |
-| Ctrl+Tab cycle tabs | 🔑 | small key binding |
-| Command Palette (Ctrl+Shift+P) | ✅ (editor) / ➕ (app) | F1 lists editor commands; app commands (Build, Layout, Stress Test…) planned (PRD R15) |
+| Goto Anything (⌘P) with live preview | ✅ | `file`, `file@symbol`, `file:line`, `file#text`; Esc returns to where you were |
+| Goto Symbol (⌘R), Goto Symbol in Project (⌘⇧R) | 🟨 | symbols found by regex (functions, classes, structs) for C/C++, Java, Python, JS, not a full parser |
+| Goto Definition (⌘⌥↓ / F12) / Goto Reference (⌘⌥⇧↓ / ⇧F12) | 🟨 | definition = symbol index lookup; references = whole-word search in the project (no language server) |
+| Goto Line (⌃G) | ✅ | |
+| Jump back / forward (⌃- / ⌃⇧-) | ✅ | |
+| Next / previous modification | ✅ | compared with the saved text |
+| ⌃Tab (recent order), ⌘⌥←/→, ⌘1…9 | ✅ | |
+| Command Palette (⌘⇧P) | ✅ | every menu command, syntaxes, colour schemes, snippets, Monaco actions |
 
 ## 4. Search and replace
 
 | Sublime feature | Status | StressLab |
 |---|---|---|
-| Find (Ctrl+F), Replace (Ctrl+H) | ✅ | |
-| Incremental find | ✅ | Monaco's find is incremental |
-| Regex, capture groups, lookahead | ✅ | |
-| Case / whole word / wrap / in selection | ✅ | |
-| Highlight all matches incl. minimap | ✅ | |
-| Preserve-case replace | ✅ | |
-| Quick Find (Ctrl+F3), Find Under Expand | 🔑 | "Find Next Selection" |
-| Find history | ✅ | |
-| Find in Files (Ctrl+Shift+F) with Where filter, wildcards, scopes | ➕ | main-process search confined to the folder |
-| Results buffer with context lines | ➕ | with Find in Files |
-| Replace across files | ➕ | |
-| Multi-selection from search results | ✅ | "Select All Occurrences of Find Match" |
+| Find, Replace, incremental, regex, case, whole word, in selection | ✅ | |
+| Quick Find / Find Under Expand | ✅ | |
+| Find in Files (⌘⇧F), Where filter (`*.cpp, -tests/`) | ✅ | searched in the main process, confined to the folder |
+| Results panel, F4 / ⇧F4 | ✅ | results grouped by file; click to open |
+| Replace in Files | ✅ | regex `$1` supported; asks before writing |
 
 ## 5. Auto-complete and snippets
 
 | Sublime feature | Status | StressLab |
 |---|---|---|
-| Completions from words in open files | ✅ | |
-| Fuzzy matching | ✅ | |
-| Completion kinds with icons | ✅ | |
-| API / language completions | ⛔ | needs language servers |
-| Snippets with tab triggers | ➕ | planned (PRD R17): `cp`, `dfs`, `dsu`, `segtree`… |
-| Placeholders, mirrors, nesting, variables | ✅ (engine) | Monaco's snippet engine supports them; no snippets defined yet |
-| Regex transforms in placeholders | ✅ (engine) | |
-| `.sublime-completions` / plugin API | ⛔ | no plugin system |
-| User-defined snippets | ➕ | snippets folder in settings |
+| Word completions, fuzzy matching | ✅ | |
+| Sublime's built-in snippets | ✅ | C/C++ (`main`, `for`, `fori`, `class`, `struct`, `printf`…), Python (`def`, `class`, `ifmain`, `try`…), Java (`main`, `pl`, `fe`…) |
+| CP snippets | ✅ | `cp`, `fastio`, `dsu`, `segtree`, `bfs`, `dfs`, `binpow`, `sieve`, `pyfast`, `jfast` |
+| Tab trigger, placeholders, mirrors | ✅ | Monaco's snippet engine |
+| Sublime's conditional formats `(?1:…)` | 🟨 | not supported by Monaco; affected built-ins were simplified |
+| User `.sublime-snippet` files, Tools → Developer → New Snippet | ✅ | saved under the app's `User/snippets` folder; reload on save |
+| API completions, `.sublime-completions` | ⛔ | needs language servers / plugin API |
 
 ## 6. Projects, sidebar and files
 
 | Sublime feature | Status | StressLab |
 |---|---|---|
-| Folder sidebar | ✅ | one root folder |
-| Multiple root folders | ➕ | |
-| `.sublime-project` / workspace files, per-project settings | ⛔ | one folder = one workspace |
-| Exclude patterns | 🟨 ✅ | fixed list (`.git`, `node_modules`, …); not configurable |
-| Quick-switch projects | ➕ | recent folders are stored but not shown in a menu yet |
-| New / rename / delete / reveal | ✅ | native right-click menu |
-| Duplicate / move / copy path / find in folder | ➕ | |
-| Preview tabs (single-click opens a temporary tab) | ➕ | |
-| File-type icons | ➕ | |
-| Git status in sidebar / gutter / status bar, diff popups | ⛔ | PRD non-goal |
-| Sublime Merge integration | ⛔ | |
-| Encodings: reopen / save with encoding | ⛔ | UTF-8 only (fine for CP) |
-| Hex view | ⛔ | |
-| Reopen closed tab (Ctrl+Shift+T) | ➕ | |
-| Recent files and folders | 🟨 ✅ | last folder reopens; no menu list yet ➕ |
-| Revert file | ➕ | |
-| Save All | ✅ | |
-| Read-only toggle | ➕ | |
-| Save to protected locations (elevation) | ⛔ | |
-| Drag files/folders from the OS into the window | ➕ | |
+| Folder sidebar, new / rename / delete / reveal | ✅ | |
+| Duplicate, copy path / name, find in folder | ✅ | right-click menu |
+| File-type icons | 🟨 | small coloured labels instead of Sublime's icon set |
+| `file_exclude_patterns` | ✅ | Sublime's defaults (`*.o`, `*.exe`, `*.class`, …) |
+| Preview tabs (single click), double click pins | ✅ | `preview_on_click` |
+| Reopen closed file (⌘⇧T), revert, Save As, Save All | ✅ | |
+| Open Recent | ✅ | File → Open Recent |
+| Drag files / folders from the OS | ✅ | |
+| Git: branch in status bar, sidebar badges, gutter changes | ✅ | needs `git` installed; works when the folder is inside a repo |
+| Reopen / Save with Encoding | ✅ | read: 14 encodings; write: UTF-8 (± BOM), UTF-16 LE/BE, Latin-1 |
+| Hex view | ✅ | read-only dump of the first 1 MB |
+| Multiple root folders | ⛔ | one folder per window; "Change Project Folder…" replaces it |
+| `.sublime-project` files, per-project settings | ⛔ | |
 
 ## 7. Interface and layout
 
 | Sublime feature | Status | StressLab |
 |---|---|---|
-| Split layouts: columns, rows, grid (Alt+Shift+1…5) | 🟨 | fixed "CP" layout only; free splits ➕ (PRD R16) |
-| Clone a file into two views | ➕ | |
-| Focus / move to groups (Ctrl+1…4) | ➕ | with free splits |
-| Tab drag-reorder / between groups | ➕ | |
-| Tab context menu (close others / to the right) | ➕ | |
-| Distraction Free (Shift+F11) | ➕ | planned (PRD R25) |
-| Full Screen (F11) | ✅ | View → Toggle Full Screen |
-| Minimap with selection/find highlights | ✅ | |
-| Rulers | ➕ | Monaco option + setting |
-| Indent guides | ✅ | |
-| Show whitespace | ✅ | on selection; setting ➕ |
-| Line numbers, gutter icons | ✅ | |
-| Word wrap with column | ➕ | Monaco option + setting/toggle |
-| Status bar: syntax ✅, indentation 🟨, encoding ➕, line endings ➕ | 🟨 | indentation is shown as fixed "Spaces: 4"; should reflect the file |
-| Customizable / hideable menu bar | ⛔ | native menu |
-| Zoom (Ctrl+Scroll) | 🔑 | font size commands exist; `mouseWheelZoom` setting |
-| Font ligatures | ➕ | Monaco option + setting |
-| Caret styles (smooth, phase, blink, solid; block/wide) | ✅ | smooth caret; style setting ➕ |
-| Highlight current line | ✅ | |
-| Highlight modified tabs | ✅ | ● dot |
-| Double-click word, triple-click line | ✅ | |
-| Click/drag line numbers to select lines | ✅ | |
-| Mouse back/forward buttons | ➕ | with jump back/forward |
+| Layouts: single, 2/3/4 columns, 2/3 rows, grid (⌘⌥1…5, ⌘⌥⇧2/3) | ✅ | + StressLab's CP layout (code \| input / output) |
+| Focus group (⌃1…4), move file to group (⌃⇧1…4) | ✅ | |
+| Clone file, tab drag reorder and between groups | ✅ | |
+| Tab menu: close, close others, close to the right, copy path, reveal | ✅ | |
+| Distraction Free (⌃⌘⇧F) | ✅ | full screen, no chrome, centred text |
+| Rulers, word wrap, show whitespace, minimap, tabs, status bar, sidebar toggles | ✅ | View menu and settings |
+| Status bar: line/column, selections, indentation, line endings, encoding, syntax | ✅ | clickable menus like Sublime |
+| Zoom (⌘-scroll), ligatures, caret style, line padding | ✅ | settings |
+| Customizable menu bar | ⛔ | native menu |
 
 ## 8. Syntax, themes and colour schemes
 
 | Sublime feature | Status | StressLab |
 |---|---|---|
-| Built-in syntaxes (C, C++, Java, Python, JS, JSON, Markdown, Go, Rust…) | ✅ | Monaco ships ~80 languages; StressLab maps the common CP extensions |
-| Syntax auto-detection by extension | ✅ | |
-| Detection by first line / per-syntax settings | ➕ | |
-| Show scope name | ✅ | "Developer: Inspect Tokens" |
-| `.sublime-syntax` / `.tmLanguage` files, syntax tests | ⛔ | Monaco uses its own grammar format |
-| Mariana colour scheme | ✅ | |
-| Other schemes (Monokai, Breakers, Sixteen), light variants | ➕ | define as Monaco themes + setting |
-| `.sublime-color-scheme` / `.tmTheme` files | ⛔ | |
-| Adaptive UI theme (UI follows the scheme) | ✅ | sidebar/tabs/status bar match Mariana |
-| `.sublime-theme` custom UI themes | ⛔ | |
+| Syntax per file, View → Syntax, status bar picker | ✅ | |
+| Mariana | ✅ | |
+| Monokai, Breakers, Celeste, Sixteen | 🟨 | recreated as Monaco themes; close to Sublime's colours, not token-for-token identical |
+| Adaptive UI (sidebar, tabs, stress tester follow the scheme) | ✅ | |
+| Select Color Scheme with live preview | ✅ | saved to the user Preferences |
+| `.sublime-syntax`, `.sublime-color-scheme`, `.sublime-theme` files | ⛔ | Monaco uses its own formats |
 
 ## 9. Build systems
 
 | Sublime feature | Status | StressLab |
 |---|---|---|
-| Ctrl+B build | ✅ | C++ / Python / Java, `inputf.in` → `outputf.in` |
-| Output panel | ✅ | `[Finished in …s]`, Esc hides |
-| Errors marked in the code | ✅ | underlined at the reported line |
-| Clickable error lines in the panel | ➕ | |
-| F4 / Shift+F4 next/previous error | 🔑 | "Go to Next/Previous Problem" (Monaco: F8) |
-| Cancel build | ✅ | ⌘. / Ctrl+. |
-| Save all before build | ✅ | |
-| Ctrl+Shift+B build variants | ➕ | e.g. "Run with input file" / "Run in stress tester" / debug flags |
-| Custom `.sublime-build` files, variables, selectors | ⛔ | fixed toolchains + C++ flags in Settings |
+| ⌘B build, output panel, `[Finished in …]` | ✅ | `inputf.in` → `outputf.in` |
+| Tools → Build System (Automatic / C++ / Python / Java) | ✅ | |
+| ⌘⇧B Build With: Run, Compile, Stress Test as Solution / Brute | ✅ | |
+| Clickable error lines, F4 / ⇧F4, errors underlined | ✅ | |
+| Cancel build (⌘. / Ctrl+.) | ✅ | Sublime uses ⌃C on macOS |
+| Custom `.sublime-build` files | ⛔ | fixed toolchains + C++ flags in Settings |
 
 ## 10–13. Customization, command line, plugins, packages
 
 | Sublime feature | Status | StressLab |
 |---|---|---|
-| Layered JSON settings, hundreds of options | ➕ (subset) | planned editor settings: font, size, tab size, wrap, rulers, minimap, theme, auto-save |
-| `.sublime-keymap` / mousemap / menu files | ⛔ | fixed Sublime-style bindings |
-| `subl` command-line tool | ➕ | could open a folder/file from the terminal; low priority |
-| Python plugin API, Package Control, community packages (LSP, linters, Terminus…) | ⛔ | no plugin system; LSP and terminal are PRD non-goals |
+| Layered JSON settings | ✅ | Preferences → Editor Settings opens Default \| User side by side, Sublime setting names |
+| Key Bindings list | 🟨 | searchable list of every binding; bindings can't be remapped yet |
+| `.sublime-keymap` / mousemap files | ⛔ | |
+| Python plugin API, Package Control, packages | ⛔ | no plugin system |
 
 ---
 
-## Recommended next steps
+## Known differences
 
-**1. Quick wins (about an hour): put the 🔑 commands on Sublime's keys.** Ctrl+Click cursors, Ctrl+Alt+↑/↓, Ctrl+Shift+M, Ctrl+Shift+Space, Ctrl+K Ctrl+K / Ctrl+K Ctrl+Backspace, Ctrl+T, F9, Ctrl+M, Ctrl+Shift+/, fold keys, Ctrl+K Ctrl+0, Ctrl+F3, F4/Shift+F4, Ctrl+Tab, Ctrl+Scroll zoom; status bar showing the file's real indentation.
-
-**2. The planned power features (PRD E-M3):** Goto Anything (with `@`/`:`), Command Palette for app commands, free split layouts, CP snippets, hot exit, auto-save, editor settings, Distraction Free.
-
-**3. Worth adding after that:** reopen closed tab, revert file, tab context menu, Find in Files, bookmarks, recent-folders menu, drag files from the OS, clickable build errors, build variants, swap case / shuffle / expand to indentation, rulers, word wrap, line-ending picker.
-
-**Not planned (⛔):** anything that depends on Sublime's native engine or plugin ecosystem: native C++ speed, plugins/packages, `.sublime-*` resource files, LSP-based definitions/hovers, Git, encodings/hex view, macros, spell check, multi-window.
+- **⌘⇧E** switches between the editor and the stress tester. In Sublime it is "Use Selection for Replace", which is left unbound.
+- **Multi-window** and **multiple root folders** would need the main process to track a folder per window. This is the largest remaining gap.
+- **Command line** (`subl`-style open): not built yet.

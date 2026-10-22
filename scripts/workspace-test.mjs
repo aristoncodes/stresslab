@@ -2,7 +2,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, readFileSync, existsSync, rmSync, unlinkSync, rmdirSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
-import { confine, list, read, write, create, rename, allFiles, watchFolder } from '../src/main/workspace.js'
+import { confine, list, read, write, create, rename, allFiles, watchFolder, search, replaceInFiles } from '../src/main/workspace.js'
 
 let failures = 0
 function check(name, cond, detail = '') {
@@ -70,6 +70,23 @@ try {
   check('rename refuses to overwrite', await throws(() => rename(root, 'src/renamed.cpp', 'b.py')))
   check('write outside is rejected', await throws(() => write(root, '../secret.txt', 'x')))
   check('outside file untouched', readFileSync(join(base, 'secret.txt'), 'utf8') === 'outside')
+
+  // --- Find / Replace in Files ---
+  writeFileSync(join(root, 'src', 'a.cpp'), 'int solve(int n) {\n  return n * 2; // solve it\n}\n')
+  writeFileSync(join(root, 'tests', 't.cpp'), 'solve(3);\n')
+  let r = await search(root, { query: 'solve' })
+  check('find in files: all matches', r.results.length === 3 && r.files === 2, JSON.stringify(r.results.map((x) => x.path + ':' + x.line)))
+  r = await search(root, { query: 'solve', where: '*.cpp, -tests/' })
+  check('where filter: include + exclude', r.results.every((x) => x.path === 'src/a.cpp') && r.results.length === 2)
+  r = await search(root, { query: 'SOLVE', caseSensitive: true })
+  check('case sensitive', r.results.length === 0)
+  r = await search(root, { query: 'n \\* \\d', regex: true })
+  check('regex', r.results.length === 1 && r.results[0].line === 2, JSON.stringify(r.results))
+  r = await search(root, { query: 'it', wholeWord: true })
+  check('whole word', r.results.length === 1 && r.results[0].text.includes('solve it'))
+  check('bad regex is an error', await throws(() => search(root, { query: '(', regex: true })))
+  const rep = await replaceInFiles(root, { query: 'solve\\((\\w+)', regex: true, replacement: 'calc($1', where: '*.cpp' })
+  check('replace in files with groups', rep.replacements === 2 && readFileSync(join(root, 'tests', 't.cpp'), 'utf8') === 'calc(3);\n', JSON.stringify(rep))
 
   // --- Watcher ---
   // Batches can also contain the earlier setup operations: wait for main.cpp.

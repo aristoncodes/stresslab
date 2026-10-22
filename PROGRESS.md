@@ -114,6 +114,18 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 - [x] M4 docs: README download table and per-OS requirements
 - [x] Release v1.1.0 from CI (tag) with all installers
 
+## Phase 11 — Sublime-style editor (v1.2.0, see PRD-editor.md + docs/sublime-feature-parity.md)
+- [x] E-M1/E-M2: editor mode, Mariana look, CP layout + ⌘B, ⌘⇧E switch, stress tester restyled, "From editor" picker
+- [x] One command table (src/shared/editorCommands.js) → Sublime's menus, key bindings and Command Palette
+- [x] Goto Anything (@ : #, live preview), Goto Symbol / in Project / Definition / Reference, jump back/forward, bookmarks, next modification
+- [x] Snippets: Sublime built-ins (C/C++, Python, Java) + CP snippets + user .sublime-snippet files + New Snippet
+- [x] Layouts (columns/rows/grid), focus/move group, clone, tab drag/menu, preview tabs, reopen closed, revert, Save As, recent, drag in
+- [x] Find/Replace in Files with Where filter and F4; Sublime-named JSON settings; 5 colour schemes; hot exit; save on focus lost
+- [x] Mark/yank, paste history, paste and indent, permute lines/selections, swap case, wrap paragraph, macros
+- [x] Build With variants, clickable errors, Git branch/badges/gutter, encodings, hex view, sidebar duplicate/copy path/find in folder/icons/excludes
+- [ ] Multi-window, multiple root folders, command-line open
+- [ ] E-M4: "Add as test case" from the failure popup, screenshots, v1.2.0 release
+
 ## Phase 8 — Extras (P2, only if time remains)
 - [x] Complexity: AI Big-O estimate of the solution (`complexity:estimate`)
 - [⏭] Complexity: measured timing over growing n + curve fit — built and working (O(N)/O(N log N)/O(N²)/O(N⁴) identified), then removed at the user's request (show only the AI estimate)
@@ -141,3 +153,4 @@ Status legend: ⬜ Not started · 🟨 In progress · ✅ Done · ⏭ Skipped
 | 2026-10-21 09:14 | 9 | walkthrough: shown after the key dialog on first launch, 11 steps verified to highlight the right section with the card inside the window, remembered after Finish, replay via header/Help menu. README rewritten; v1.0.0 release with the dmg (uploaded with curl after gh timed out) |
 | 2026-10-21 19:26 | 10 | Windows/Linux: engine tests pass on real macOS, Windows (MinGW g++ 15.2, py launcher, Temurin 21) and Linux (g++-14, Python 3.12, Temurin 21) CI runners, 105 checks each; deep recursion 10^6 passes on all three; per-OS menus/labels/badges/key storage; installers configured and built in CI |
 | 2026-10-21 20:39 | 10 | all installers built by CI (macOS 126 MB, Windows 260 MB, Linux 221 MB artifacts); v1.1.0 tagged → CI release job attaches them. Next: Sublime-style editor (PRD-editor.md, v1.2.0) |
+| 2026-10-22 | 11 | "everything Sublime" rebuild: EditorView rewritten around the command table (groups, quick panels, find panel, status bar menus). Electron harness 35/35 (preview tabs, Git gutter/badges, hot exit incl. restart, snippets, palette, symbols, layouts, permute, Find in Files + F4, clickable build error, settings, schemes, New Snippet, macro, Goto file:line, hex, reopen closed). Bugs found by it: replacing a preview tab disposed the new file's buffer (save then wrote an empty file), read errors shown as empty buffers, stale closures in session/Git listeners, Preferences writer missing a comma, git paths relative to the repo instead of the folder |

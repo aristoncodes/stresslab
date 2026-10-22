@@ -17,7 +17,8 @@
 }
 
 /* ---- Editor mode: Sublime Text 4 (Adaptive theme + Mariana) ---- */
-.editor-view {
+/* Mariana defaults; lib/schemes.js overrides them on <html> for other colour schemes. */
+:root {
   --ed-bg: #303841;
   --ed-side: #262d34;
   --ed-tab: #2b323a;
@@ -28,6 +29,11 @@
   --ed-accent: #f9ae58;
   --ed-pink: #ec5f66;
   --ed-hover: #343d46;
+  --ed-active: #3b444e;
+  --control: #3b444e;
+  --control-border: #4f5b66;
+}
+.editor-view {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -37,9 +43,9 @@
   font-size: 13px;
 }
 .editor-view button {
-  background: #3b444e;
+  background: var(--control);
   color: var(--ed-text);
-  border: 1px solid #4f5b66;
+  border: 1px solid var(--control-border);
 }
 .editor-view button:disabled {
   opacity: 0.4;
@@ -173,14 +179,14 @@
   padding: 0 8px 0 14px;
   background: var(--ed-tab);
   border-right: 1px solid var(--ed-border);
-  color: #b8b8b0;
+  color: var(--ed-muted);
   cursor: default;
   white-space: nowrap;
   max-width: 220px;
 }
 .tab.active {
   background: var(--ed-tab-active);
-  color: #fff;
+  color: var(--ed-text);
   box-shadow: none;
 }
 .tab-name {
@@ -372,4 +378,295 @@
 .cp-missing {
   padding: 16px;
   color: var(--ed-muted);
+}
+
+/* ---- Quick panel (Goto Anything, Command Palette, …) ---- */
+.quick-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+}
+.quick-panel {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(640px, calc(100% - 24px));
+  background: #262d34;
+  border: 1px solid #1e242a;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+  border-radius: 4px;
+  padding: 8px;
+  color: #d8dee9;
+  font-family: -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 13px;
+}
+.quick-input {
+  width: 100%;
+  background: #303841;
+  color: #d8dee9;
+  border: 1px solid #4f5b66;
+  border-radius: 3px;
+  padding: 6px 8px;
+  font-size: 14px;
+  outline: none;
+}
+.quick-list {
+  max-height: 420px;
+  overflow-y: auto;
+  margin-top: 6px;
+}
+.quick-item {
+  padding: 5px 8px;
+  border-radius: 3px;
+  cursor: default;
+}
+.quick-item.active {
+  background: #3b444e;
+}
+.quick-main {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.quick-label b {
+  color: #f9ae58;
+  font-weight: 600;
+}
+.quick-hint {
+  color: #a6acb9;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.quick-detail {
+  color: #a6acb9;
+  font-size: 11px;
+  margin-top: 1px;
+}
+.quick-empty {
+  padding: 8px;
+  color: #a6acb9;
+}
+.sublime-mark {
+  border-left: 2px solid #f9ae58;
+}
+
+/* ---- Layout groups (View → Layout) ---- */
+.editor-groups {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  gap: 1px;
+  background: var(--ed-border);
+}
+.editor-group {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--ed-bg);
+}
+.editor-group.focused .tab.active {
+  box-shadow: inset 0 -2px 0 var(--ed-accent);
+}
+.group-empty {
+  height: 100%;
+}
+.tab.preview .tab-name {
+  font-style: italic;
+}
+.editor-view.distraction .editor-groups {
+  padding: 0 max(0px, calc((100% - 900px) / 2));
+  background: var(--ed-bg);
+}
+
+/* ---- Status bar items ---- */
+.status-left {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.editor-view .status-item {
+  background: none;
+  border: none;
+  padding: 0 2px;
+  color: var(--ed-muted);
+  font-size: 12px;
+}
+.editor-view .status-item:hover {
+  color: var(--ed-text);
+}
+.status-rec {
+  color: var(--ed-pink);
+}
+.status-git {
+  color: var(--ed-text);
+}
+
+/* ---- Gutter: bookmarks and Git changes ---- */
+.bookmark-glyph::before {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 10px;
+  margin: 4px auto 0;
+  background: var(--ed-accent);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 70%, 0 100%);
+}
+.git-gutter-added,
+.git-gutter-modified {
+  border-left: 3px solid;
+  margin-left: 3px;
+}
+.git-gutter-added {
+  border-color: #99c794;
+}
+.git-gutter-modified {
+  border-color: #6699cc;
+}
+.git-gutter-deleted {
+  border-bottom: 2px solid var(--ed-pink);
+  margin-left: 3px;
+  width: 6px !important;
+}
+
+/* ---- Sidebar extras ---- */
+.file-icon {
+  flex: none;
+  width: 22px;
+  margin-right: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--ed-muted);
+}
+.tree-badge {
+  margin-left: auto;
+  padding-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.tree-name.git-modified,
+.tree-badge.git-modified {
+  color: #fac863;
+}
+.tree-name.git-added,
+.tree-name.git-untracked,
+.tree-badge.git-added,
+.tree-badge.git-untracked {
+  color: #99c794;
+}
+.tree-badge.git-deleted {
+  color: var(--ed-pink);
+}
+
+/* ---- Clickable build errors ---- */
+.build-error-line {
+  cursor: pointer;
+  color: var(--ed-pink);
+}
+.build-error-line:hover {
+  text-decoration: underline;
+}
+
+/* ---- Find in Files panel ---- */
+.find-panel {
+  flex: none;
+  height: 38%;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--ed-border);
+  background: var(--ed-side);
+}
+.find-form {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: repeat(3, auto);
+  gap: 4px 8px;
+  padding: 8px 10px;
+  align-items: center;
+}
+.find-toggles {
+  grid-row: 1 / 4;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.find-form label {
+  grid-column: 2;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.find-form label span {
+  width: 56px;
+  text-align: right;
+  color: var(--ed-muted);
+}
+.find-form input {
+  flex: 1;
+  background: var(--ed-bg);
+  color: var(--ed-text);
+  border: 1px solid var(--control-border);
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+.find-buttons {
+  grid-column: 3;
+  grid-row: 1 / 4;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.editor-view .find-toggle {
+  width: 30px;
+  font-size: 11px;
+  padding: 2px 0;
+}
+.editor-view .find-toggle.on {
+  background: var(--ed-accent);
+  color: #1e242a;
+}
+.find-results {
+  flex: 1;
+  overflow: auto;
+  padding: 4px 10px 10px;
+  background: var(--ed-bg);
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.find-summary {
+  color: var(--ed-muted);
+}
+.find-summary.error {
+  color: var(--ed-pink);
+}
+.find-file-name {
+  margin-top: 8px;
+  color: var(--ed-accent);
+}
+.find-line {
+  white-space: pre;
+  cursor: pointer;
+}
+.find-line:hover,
+.find-line.active {
+  background: var(--ed-hover);
+}
+.find-ln {
+  color: var(--ed-muted);
+}
+.find-text mark {
+  background: none;
+  color: var(--ed-text);
+  outline: 1px solid var(--ed-accent);
+  border-radius: 2px;
 }

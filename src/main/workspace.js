@@ -136,3 +136,106 @@ export function watchFolder(root, onChange, delayMs = 150) {
     w.close()
   }
 }
+
+// ---------- Find / Replace in Files ----------
+
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// Sublime's "Where" field: comma-separated globs; a leading "-" excludes.
+// "*.cpp", "src/", "-*/tests/*". Empty = everything.
+function whereFilter(where = '') {
+  const toRe = (glob) =>
+    new RegExp(
+      '^' +
+        glob
+          .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+          .replace(/\*\*/g, '\0')
+          .replace(/\*/g, '[^/]*')
+          .replace(/\?/g, '[^/]')
+          .replace(/\0/g, '.*') +
+        (glob.endsWith('/') ? '.*' : '') +
+        '$'
+    )
+  const parts = where.split(',').map((s) => s.trim()).filter(Boolean)
+  const include = parts.filter((p) => !p.startsWith('-')).map(toRe)
+  const exclude = parts.filter((p) => p.startsWith('-')).map((p) => toRe(p.slice(1)))
+  const test = (re, path) => re.test(path) || re.test(path.split('/').pop())
+  return (path) => (!include.length || include.some((re) => test(re, path))) && !exclude.some((re) => test(re, path))
+}
+
+export function searchRegex({ query, regex, caseSensitive, wholeWord }) {
+  if (!query) throw new WorkspaceError('Nothing to find')
+  let src = regex ? query : escapeRe(query)
+  if (wholeWord) src = `\\b(?:${src})\\b`
+  try {
+    return new RegExp(src, caseSensitive ? 'g' : 'gi')
+  } catch (e) {
+    throw new WorkspaceError(`Invalid regular expression: ${e.message}`)
+  }
+}
+
+const isBinary = (text) => text.slice(0, 8000).includes('\0')
+
+/**
+ * Find in Files. opts: { query, regex, caseSensitive, wholeWord, where }.
+ * Returns { results: [{ path, line, col, length, text }], files, truncated }.
+ */
+export async function search(root, opts, limit = 5000) {
+  const re = searchRegex(opts)
+  const keep = whereFilter(opts.where)
+  const results = []
+  let files = 0
+  for (const path of await allFiles(root)) {
+    if (!keep(path)) continue
+    let text
+    try {
+      text = await read(root, path)
+    } catch {
+      continue // too large or unreadable
+    }
+    if (isBinary(text)) continue
+    let found = false
+    text.split('\n').forEach((line, i) => {
+      if (results.length >= limit) return
+      re.lastIndex = 0
+      for (const m of line.matchAll(re)) {
+        if (!m[0].length) break
+        found = true
+        results.push({ path, line: i + 1, col: m.index + 1, length: m[0].length, text: line.replace(/\r$/, '').slice(0, 300) })
+        if (results.length >= limit) break
+      }
+    })
+    if (found) files++
+    if (results.length >= limit) return { results, files, truncated: true }
+  }
+  return { results, files, truncated: false }
+}
+
+// Replace in Files: same options plus `replacement` ($1… for regex groups).
+export async function replaceInFiles(root, opts) {
+  const re = searchRegex(opts)
+  const keep = whereFilter(opts.where)
+  let files = 0
+  let replacements = 0
+  for (const path of await allFiles(root)) {
+    if (!keep(path)) continue
+    let text
+    try {
+      text = await read(root, path)
+    } catch {
+      continue
+    }
+    if (isBinary(text)) continue
+    let n = 0
+    const out = text.replace(re, (...args) => {
+      n++
+      return opts.regex ? args[0].replace(new RegExp(re.source, re.flags.replace('g', '')), opts.replacement) : opts.replacement
+    })
+    if (n) {
+      await write(root, path, out)
+      files++
+      replacements += n
+    }
+  }
+  return { files, replacements }
+}
