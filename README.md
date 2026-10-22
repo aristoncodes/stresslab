@@ -12,9 +12,11 @@ Built with Electron for the *Application Development — Desktop Application* co
 
 | OS | Download | First launch |
 |---|---|---|
-| **macOS** (Apple Silicon) | [⬇ StressLab-1.1.0-arm64.dmg](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-1.1.0-arm64.dmg) | Drag to Applications, then **right-click → Open** the first time (unsigned app), or run `xattr -cr /Applications/StressLab.app` |
-| **Windows** 10/11 (x64) | [⬇ Installer (.exe)](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-Setup-1.1.0-x64.exe) · [portable .zip](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-1.1.0-x64-portable.zip) | SmartScreen may warn (unsigned): **More info → Run anyway** |
-| **Linux** (x64) | [⬇ .deb (Ubuntu/Debian)](https://github.com/aristoncodes/stresslab/releases/latest/download/stresslab_1.1.0_amd64.deb) · [AppImage (any distro)](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-1.1.0-x86_64.AppImage) | `.deb`: `sudo apt install ./stresslab_1.1.0_amd64.deb`. AppImage: `chmod +x StressLab-*.AppImage`; on Ubuntu 22.04+ it may need `sudo apt install libfuse2` |
+| **macOS** (Apple Silicon) | [⬇ StressLab-1.2.0-arm64.dmg](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-1.2.0-arm64.dmg) | Drag to Applications, then **right-click → Open** the first time (unsigned app), or run `xattr -cr /Applications/StressLab.app` |
+| **Windows** 10/11 (x64) | [⬇ Installer (.exe)](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-Setup-1.2.0-x64.exe) · [portable .zip](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-1.2.0-x64-portable.zip) | SmartScreen may warn (unsigned): **More info → Run anyway** |
+| **Linux** (x64) | [⬇ .deb (Ubuntu/Debian)](https://github.com/aristoncodes/stresslab/releases/latest/download/stresslab_1.2.0_amd64.deb) · [AppImage (any distro)](https://github.com/aristoncodes/stresslab/releases/latest/download/StressLab-1.2.0-x86_64.AppImage) | `.deb`: `sudo apt install ./stresslab_1.2.0_amd64.deb`. AppImage: `chmod +x StressLab-*.AppImage`; on Ubuntu 22.04+ it may need `sudo apt install libfuse2` |
+
+**Updating:** from v1.2.0 on, StressLab checks for a new version at startup (and via **Help → Check for Updates…**) and opens the download page; install it over the old app, and your settings and API key are kept. v1.0.0 and v1.1.0 have no update check, so download v1.2.0 once from the links above.
 
 [All releases](https://github.com/aristoncodes/stresslab/releases). On first launch the app asks for a free [Groq API key](https://console.groq.com/keys) (only needed for the AI features) and then walks you through the app. You also need the compilers for the languages you use: see [Requirements](#requirements).
 
@@ -146,9 +148,9 @@ repeat t {
 npm install
 npm run dev          # run the app with hot reload
 npm test             # 82 spec-language checks + 23 engine checks (no UI)
-npm run build:mac    # → dist/StressLab-1.1.0-arm64.dmg
-npm run build:win    # → dist/StressLab-Setup-1.1.0-x64.exe + portable .zip (on Windows)
-npm run build:linux  # → dist/StressLab-1.1.0-x86_64.AppImage + .deb (on Linux)
+npm run build:mac    # → dist/StressLab-1.2.0-arm64.dmg
+npm run build:win    # → dist/StressLab-Setup-1.2.0-x64.exe + portable .zip (on Windows)
+npm run build:linux  # → dist/StressLab-1.2.0-x86_64.AppImage + .deb (on Linux)
 ```
 
 **CI** ([`.github/workflows/build.yml`](.github/workflows/build.yml)): every push runs `npm test` on real macOS, Windows and Linux machines with g++, Python and Java. A `v*` tag builds all installers natively and attaches them to the GitHub release.

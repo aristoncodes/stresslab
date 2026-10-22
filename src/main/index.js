@@ -6,6 +6,7 @@ import { registerEditorIpc, unsavedCount } from './editorIpc.js'
 import { buildMenu } from './menu.js'
 import { getToolchains } from './toolchains.js'
 import { stopRun } from './stress.js'
+import { scheduleUpdateCheck } from './updates.js'
 
 app.setName('StressLab')
 
@@ -16,6 +17,7 @@ app.whenReady().then(() => {
   registerEditorIpc()
   buildMenu()
   createMainWindow(unsavedCount)
+  scheduleUpdateCheck()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow(unsavedCount)

@@ -3,6 +3,7 @@
 // tester's commands. Clicks are forwarded to the focused window's renderer as
 // `menu:command`, so menu, buttons and key bindings share one code path.
 import { app, Menu, BrowserWindow } from 'electron'
+import { checkForUpdates } from './updates.js'
 import { basename } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { getWindow, openSettingsWindow } from './windows.js'
@@ -93,7 +94,11 @@ function appMenu() {
 const switchItem = { label: 'Switch Editor / Stress Test', accelerator: 'CmdOrCtrl+Shift+E', click: command('toggleMode') }
 const helpMenu = {
   role: 'help',
-  submenu: [{ label: 'Show Walkthrough', click: command('tour') }, ...(isMac ? [] : [{ role: 'about' }])]
+  submenu: [
+    { label: 'Show Walkthrough', click: command('tour') },
+    { label: 'Check for Updates…', click: () => checkForUpdates({ manual: true }) },
+    ...(isMac ? [] : [{ role: 'about' }])
+  ]
 }
 const devItems = is.dev ? [{ type: 'separator' }, { role: 'reload', accelerator: 'CmdOrCtrl+Alt+Shift+R' }, { role: 'toggleDevTools' }] : []
 
